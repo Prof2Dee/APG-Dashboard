@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APG Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --black:    #0F1A0F;
+  --black2:   #1A2B1A;
+  --black3:   #F3FAF3;
+  --black4:   #E8F5E8;
+  --border:   #C8E6C8;
+  --border2:  #A5D6A5;
+  --green:    #1B8A3C;
+  --green2:   #146B2E;
+  --green3:   #0F5222;
+  --green-bg: #E8F5E9;
+  --amber:    #D97706;
+  --amber-bg: #FEF9EC;
+  --red:      #DC2626;
+  --red-bg:   #FEF2F2;
+  --white:    #FFFFFF;
+  --white2:   #F7FBF7;
+  --muted:    #4A7A4A;
+  --muted2:   #6B9B6B;
+  --ink:      #0F1A0F;
+  --surface:  #FFFFFF;
+  --page-bg:  #F0F7F0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'Sora', system-ui, sans-serif;
+  background: var(--page-bg);
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── INPUTS ── */
+input, select {
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: 'Sora', sans-serif;
+  width: 100%;
+  outline: none;
+  transition: border-color .2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(27,138,60,.12); }
+input[disabled] { opacity: .5; cursor: not-allowed; background: var(--black4); }
+select option { background: var(--white); color: var(--ink); }
+
+/* ── BUTTONS ── */
+button {
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--ink);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+button:hover { background: var(--green-bg); border-color: var(--green); color: var(--green3); }
+button.btn-green {
+  background: var(--green);
+  color: #FFFFFF;
+  border-color: var(--green);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(27,138,60,.25);
+}
+button.btn-green:hover { background: var(--green2); border-color: var(--green2); color: #fff; }
+button.btn-outline {
+  background: var(--green-bg);
+  color: var(--green3);
+  border-color: var(--green);
+}
+button.btn-outline:hover { background: var(--green); color: #fff; }
+button.btn-warn {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 1px 3px rgba(217,119,6,.15);
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.card-white {
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 10px;
+}
+
+/* ── PILLS ── */
+.pill {
+  display: inline-flex; align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 20px;
+}
+.pill-g { background: #E8F5E9; color: var(--green3); border: 1px solid #A5D6A5; }
+.pill-a { background: var(--amber-bg); color: var(--amber); border: 1px solid #FCD34D; }
+.pill-r { background: var(--red-bg);   color: var(--red);   border: 1px solid #FCA5A5; }
+.pill-n { background: var(--black4);   color: var(--muted2); border: 1px solid var(--border); }
+.pill-b { background: #E8F5E9; color: var(--green3); border: 1px solid #A5D6A5; }
+
+/* ── PROGRESS ── */
+.bar-track { background: #D1EAD1; border-radius: 3px; height: 4px; overflow: hidden; margin: 6px 0 3px; }
+.bar-fill  { height: 100%; border-radius: 3px; transition: width .5s ease; }
+.bar-g { background: var(--green); }
+.bar-a { background: var(--amber); }
+.bar-r { background: var(--red); }
+.bar-n { background: var(--border); }
+
+/* ── TYPOGRAPHY ── */
+.mono { font-family: 'JetBrains Mono', monospace; }
+.muted  { color: var(--muted); }
+.muted2 { color: var(--muted2); }
+.sm  { font-size: 12px; }
+.xs  { font-size: 11px; }
+.sep { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* ── SECTION LABEL ── */
+.sec-label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em;
+  color: var(--green3); margin: 14px 0 8px;
+  padding-bottom: 5px; border-bottom: 2px solid var(--green-bg);
+}
+
+/* ── TARGET CHIP (readonly for leads) ── */
+.tgt-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--green-bg); border: 1px solid #A5D6A5;
+  border-radius: 5px; padding: 3px 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--green3); margin-bottom: 4px;
+}
+.tgt-chip .tgt-label { color: var(--muted2); font-size: 10px; }
+
+/* ── NOTE BOX ── */
+.note-box {
+  background: var(--white2); border-left: 3px solid var(--border);
+  border-radius: 0 6px 6px 0; padding: 7px 11px;
+  font-size: 12px; color: var(--muted); margin-bottom: 8px;
+}
+.note-box.green { background: var(--green-bg); border-left-color: var(--green); color: var(--green3); }
+
+/* ── PERIOD TABS ── */
+.period-tabs { display: flex; gap: 4px; background: var(--green-bg); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+.period-tab {
+  flex: 1; text-align: center; padding: 6px 8px;
+  border-radius: 5px; font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--muted); transition: all .15s;
+  border: none; background: transparent; font-family: 'Sora', sans-serif;
+}
+.period-tab:hover { color: var(--green3); background: rgba(27,138,60,.08); }
+.period-tab.active {
+  background: var(--green);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(27,138,60,.3);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.fade-up { animation: fadeUp .25s ease forwards; }
+
+/* ── METRIC ROW ── */
+.metric-row { margin-bottom: 12px; }
+.metric-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; font-weight: 500; }
+.metric-input-wrap { display: flex; align-items: center; gap: 8px; }
+.metric-hint { font-size: 11px; color: var(--muted2); white-space: nowrap; }
+.metric-note { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ── COMMENTS ── */
+.comment-card { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:8px; }
+.comment-card.from-ceo { border-left:3px solid var(--green); }
+.comment-card.from-lead { border-left:3px solid #3b82f6; }
+.comment-card.reply { margin-left:22px; background:var(--white2); }
+.comment-avatar { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.comment-input { width:100%; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-family:'Sora',sans-serif; font-size:13px; resize:vertical; min-height:72px; outline:none; line-height:1.5; color:var(--ink); background:var(--white); }
+.comment-input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(27,138,60,.12); }
+
+/* ── API STATUS DOT ── */
+.api-dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.api-dot.ok      { background:#6fda94; box-shadow:0 0 5px #6fda94; }
+.api-dot.error   { background:var(--red); }
+.api-dot.loading { background:var(--amber); animation:apipulse .8s ease infinite alternate; }
+.api-dot.none    { background:#555; }
+@keyframes apipulse { from{opacity:.4} to{opacity:1} }
+
+/* ── PRINT ── */
+@media print {
+  .no-print { display:none !important; }
+  body { background:#fff !important; }
+  .card { break-inside:avoid; box-shadow:none !important; border:1px solid #ccc !important; }
+  input[disabled] { background:transparent !important; border:none !important; padding:0; font-weight:600; opacity:1 !important; color:#000 !important; }
+  .print-show { display:block !important; }
+}
+.print-show { display:none; }
+</style>
+</head>
+<body>
+<!-- API SETUP MODAL -->
+<div id="api-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:500px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25)">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--green3);text-transform:uppercase;margin-bottom:4px">One-time setup</div>
+    <div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px">Connect to Google Sheets</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px">Paste your Apps Script Web App URL. This is saved in your browser and shared across all users on the same device. See <b>APG_Code.gs</b> for deployment instructions.</div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Apps Script URL</label>
+      <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:12px;width:100%">
+    </div>
+    <div id="api-modal-err" style="display:none;background:var(--red-bg);border:1px solid #FCA5A5;color:var(--red);padding:9px 12px;font-size:12px;border-radius:6px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeApiModal()" style="flex:1">Cancel</button>
+      <button onclick="saveApiUrl()" class="btn-green" style="flex:2">Save & connect</button>
+    </div>
+  </div>
+</div>
+
+<div id="app"></div>
+<script>
+// ── AUTH & CONFIG ─────────────────────────────────────────────────────────────
+// Credentials stored by username — login screen shows NO role list, preventing
+// process owners from seeing other users' names or roles.
+const CREDS  = {ceo:'APG@Ceo#25', sdl:'APG@Sdl#25', ops:'APG@Ops#25', mkt:'APG@Mkt#25', fin:'APG@Fin#25', hr:'APG@Hr#25'};
+const LABELS = {ceo:'Chief Executive Officer', sdl:'Sales & Distribution Lead', ops:'Operations Manager', mkt:'Marketing & Communications Lead', fin:'Head of Finance', hr:'HR & Administrative Lead'};
+const ACCESS = {ceo:['sdl','ops','mkt','fin','hr'], sdl:['sdl'], ops:['ops'], mkt:['mkt'], fin:['fin'], hr:['hr']};
+const DNAMES = {sdl:'Sales & Distribution', ops:'Operations', mkt:'Marketing & Comms', fin:'Finance', hr:'HR & Admin'};
+
+// ── SUBMISSION STORE ──────────────────────────────────────────────────────────
+// Submitted reports live separately from draft data.
+// CEO always reads from the submitted store, not the live draft.
+function loadAllSubmissions(){
+  try{ return JSON.parse(localStorage.getItem('apg_submissions')||'{}'); }catch(e){ return {}; }
+}
+function saveAllSubmissions(d){ localStorage.setItem('apg_submissions', JSON.stringify(d)); }
+
+function getSubmission(role, m, per){
+  // Always check S.remote first (populated from API after login).
+  // CEO only has remote data — no local submissions from other users.
+  const remote = (((S.remote[role]||{})[m]||{})[per]);
+  if(remote) return remote;
+  // Fall back to local store (own device submissions, or lead reading their own data)
+  const all = loadAllSubmissions();
+  return (((all[role]||{})[m]||{})[per]) || null;
+}
+function saveSubmission(role, m, per, dataObj){
+  const all = loadAllSubmissions();
+  if(!all[role]) all[role]={};
+  if(!all[role][m]) all[role][m]={};
+  all[role][m][per] = dataObj;
+  saveAllSubmissions(all);
+}
+
+// ── CUSTOM KPI STORE ──────────────────────────────────────────────────────────
+function loadCustomKpis(role){
+  try{ return JSON.parse(localStorage.getItem('apg_ckpi_'+role)||'[]'); }catch(e){ return []; }
+}
+function saveCustomKpis(role, arr){ localStorage.setItem('apg_ckpi_'+role, JSON.stringify(arr)); }
+
+function addCustomKpi(role){
+  const label = prompt('KPI name / label:');
+  if(!label) return;
+  const unit  = prompt('Unit (e.g. %, ₦, count, days):') || '';
+  const tgt   = prompt('Monthly target value (number):') || '';
+  const arr = loadCustomKpis(role);
+  arr.push({ id:'ck_'+Date.now(), label, unit, target: tgt });
+  saveCustomKpis(role, arr);
+  // Sync custom KPIs to API
+  apiPost('save_ckpis', { role, kpis: arr });
+  render();
+}
+function removeCustomKpi(role, id){
+  const arr = loadCustomKpis(role).filter(k=>k.id!==id);
+  saveCustomKpis(role, arr);
+  apiPost('save_ckpis', { role, kpis: arr });
+  render();
+}
+
+// ── API LAYER ─────────────────────────────────────────────────────────────────
+function getApiUrl(){ return localStorage.getItem('apg_api_url')||''; }
+
+function openApiModal(){
+  document.getElementById('api-url-input').value = getApiUrl();
+  document.getElementById('api-modal-err').style.display = 'none';
+  document.getElementById('api-modal').style.display = 'flex';
+}
+function closeApiModal(){ document.getElementById('api-modal').style.display = 'none'; }
+function saveApiUrl(){
+  const url = document.getElementById('api-url-input').value.trim();
+  const err = document.getElementById('api-modal-err');
+  if(!url || !url.startsWith('https://')){
+    err.textContent = '⚠️ Please enter a valid URL starting with https://';
+    err.style.display='block'; return;
+  }
+  localStorage.setItem('apg_api_url', url);
+  closeApiModal();
+  S.apiStatus = 'loading';
+  render();
+  initFromApi();
+}
+
+// JSONP GET — works around Apps Script CORS redirect
+function apiGet(action, params, cb){
+  const url = getApiUrl();
+  if(!url){ cb && cb({ok:false, error:'No API URL'}); return; }
+  const cbName = 'apg_cb_' + Math.random().toString(36).slice(2,9);
+  const qp = Object.entries({...params, action, callback:cbName})
+    .map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  window[cbName] = function(data){
+    delete window[cbName];
+    document.getElementById(cbName+'_s')?.remove();
+    cb && cb(data);
+  };
+  const s = document.createElement('script');
+  s.id = cbName+'_s';
+  s.src = url + '?' + qp;
+  s.onerror = ()=>{ delete window[cbName]; cb && cb({ok:false, error:'Network error'}); };
+  document.head.appendChild(s);
+  // Timeout fallback after 10s
+  setTimeout(()=>{ if(window[cbName]){ delete window[cbName]; document.getElementById(cbName+'_s')?.remove(); cb && cb({ok:false, error:'Timeout'}); } }, 10000);
+}
+
+// WRITE via JSONP GET — same mechanism as reads, guaranteed to reach Apps Script.
+// no-cors POST was silently blocked by browsers before it left the device.
+// We encode the payload as a URL parameter and route through doGet on the server.
+function apiPost(action, data){
+  const url = getApiUrl();
+  if(!url) return;
+  const payload = encodeURIComponent(JSON.stringify({action, ...data}));
+  const cbName  = 'apg_w_' + Math.random().toString(36).slice(2,9);
+  window[cbName] = function(res){
+    delete window[cbName];
+    document.getElementById(cbName+'_s')?.remove();
+    if(res && !res.ok) console.warn('APG write error:', res.error);
+  };
+  const s = document.createElement('script');
+  s.id  = cbName + '_s';
+  s.src = url + '?action=write&payload=' + payload + '&callback=' + cbName;
+  s.onerror = ()=>{ delete window[cbName]; document.getElementById(cbName+'_s')?.remove(); };
+  document.head.appendChild(s);
+  setTimeout(()=>{ delete window[cbName]; document.getElementById(cbName+'_s')?.remove(); }, 15000);
+}
+
+// Fetch all submissions from API after login.
+// CEO gets all depts. Leads get their own previous submissions to restore history.
+function initFromApi(){
+  if(!getApiUrl()){ S.apiStatus='none'; render(); return; }
+  S.apiStatus = 'loading';
+  render();
+  apiGet('get_all', {}, function(data){
+    if(data && data.ok && data.submissions){
+      S.remote = data.submissions;
+      S.apiStatus = 'ok';
+      // Count what we got for the toast
+      const depts = Object.keys(data.submissions);
+      const total = depts.reduce((acc,d)=>{
+        return acc + Object.values(data.submissions[d]||{}).reduce((a,p)=>a+Object.keys(p||{}).length,0);
+      },0);
+      showToast_('✓ Connected — ' + total + ' submission' + (total!==1?'s':'') + ' loaded from ' + depts.length + ' dept' + (depts.length!==1?'s':''), 'green');
+      // For leads: restore own submitted reports into local store
+      if(S.role !== 'ceo'){
+        const myData = S.remote[S.role] || {};
+        Object.entries(myData).forEach(([m, periods])=>{
+          Object.entries(periods).forEach(([per, snap])=>{
+            const existing = getSubmission(S.role, m, per);
+            if(!existing) saveSubmission(S.role, m, per, {...snap, month:m, period:per, role:S.role});
+          });
+        });
+      }
+    } else {
+      S.apiStatus = 'error';
+      showToast_('✕ API error: ' + (data?.error || 'No data returned — check Apps Script deployment'), 'red');
+    }
+    render();
+    loadComments(S.dv, S.month, S.period);
+  });
+}
+
+// Refresh remote data — called by button and every 5 min for CEO
+function refreshRemote(){
+  if(!getApiUrl()){ showToast_('⚠ No API URL — click ⚙ API to connect', 'amber'); return; }
+  if(S.role !== 'ceo') return;
+  showToast_('⏳ Loading latest data…', 'amber');
+  apiGet('get_all', {}, function(data){
+    if(data && data.ok && data.submissions){
+      S.remote = data.submissions;
+      S.apiStatus = 'ok';
+      const depts = Object.keys(data.submissions);
+      const total = depts.reduce((acc,d)=>{
+        return acc + Object.values(data.submissions[d]||{}).reduce((a,p)=>a+Object.keys(p||{}).length,0);
+      },0);
+      showToast_('✓ Refreshed — ' + total + ' submission' + (total!==1?'s':'') + ' from ' + depts.length + ' dept' + (depts.length!==1?'s':''), 'green');
+      render();
+    } else {
+      S.apiStatus = 'error';
+      showToast_('✕ Refresh failed: ' + (data?.error||'No data returned'), 'red');
+    }
+  });
+}
+
+// Toast notification
+function showToast_(msg, type){
+  const colors = { green:'#166534', red:'#991B1B', amber:'#92400E' };
+  const bgs    = { green:'#DCFCE7', red:'#FEE2E2', amber:'#FEF9EC' };
+  const borders= { green:'#86EFAC', red:'#FCA5A5', amber:'#FCD34D' };
+  let t = document.getElementById('apg-toast');
+  if(!t){ t = document.createElement('div'); t.id='apg-toast'; document.body.appendChild(t); }
+  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:${bgs[type]||bgs.green};color:${colors[type]||colors.green};
+    border:1px solid ${borders[type]||borders.green};border-radius:8px;
+    padding:11px 20px;font-size:13px;font-weight:600;z-index:9999;
+    box-shadow:0 4px 12px rgba(0,0,0,.15);max-width:90vw;text-align:center;`;
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(()=>{ t.style.display='none'; }, 5000);
+}
+
+// Auto-refresh every 5 minutes for CEO
+setInterval(function(){ if(S.li && S.role==='ceo') refreshRemote(); }, 5*60*1000);
+
+const PERIODS = [
+  {v:'month', l:'Monthly'},
+  {v:'w1',    l:'Week 1'},
+  {v:'w2',    l:'Week 2'},
+  {v:'w3',    l:'Week 3'},
+  {v:'w4',    l:'Week 4'},
+];
+
+// Default targets from KPI documents
+const DEF = {
+  sdl:{ rev_target:50000000, cust_retail_t:10, cust_wholesale_t:5, team_pct_t:80, rtm_pct_t:80, rtm_purchase_pct_t:60, rtm_engage_pct_t:80, rep_pct_t:100 },
+  ops:{ rev_target:1219680000, wrev_target:843853500, prod_target:60984000, new_retail_t:10, new_wholesale_t:5 },
+  mkt:{ leads_min:100, leads_max:150, lift_pct:25, ush_rev:2000000, jumia_rev:150000, konga_rev:150000, greenroom_rev:150000, activations:30, activations_attend:10, awareness_camps:3, wholesale_acts:3, follow_pct:5, follow_pct_max:10, engage_pct:6, influencers:2, reach:500000, roas_social:4, roas_trad:4 },
+  fin:{ report_day:5, recs_min:3, recv_max_pct:10, fund_opps:1 },
+  hr:{ comp_pct:95, recruit_days:21, training_min:1, kpi_reviews:5 }
+};
+
+let S = { li:false, role:null, month:cm(), period:'month', dv:'sdl', tm:false, showHistory:false,
+          remote:{}, comments:{}, apiStatus:'none' };
+
+function cm(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+
+function months(){
+  // Generates Jan 2025 → Dec 2027 — extend END_YEAR to add more years
+  const START_YEAR = 2026;
+  const END_YEAR   = 2028;
+  const o = [];
+  for(let y=START_YEAR; y<=END_YEAR; y++){
+    for(let mn=0; mn<12; mn++){
+      const d = new Date(y, mn, 1);
+      const mv = String(mn+1).padStart(2,'0');
+      o.push({ v:`${y}-${mv}`, l:d.toLocaleString('en-GB',{month:'long',year:'numeric'}) });
+    }
+  }
+  return o;
+}
+
+function monthYears(){
+  const START=2026; const END=2028;
+  const years=[];
+  for(let y=START;y<=END;y++) years.push(y);
+  return years;
+}
+
+const MONTH_NAMES=['January','February','March','April','May','June',
+                   'July','August','September','October','November','December'];
+
+function parseMonth(v){ // 'YYYY-MM' → {y,m}
+  const [y,m]=v.split('-'); return {y:parseInt(y), m:parseInt(m)-1};
+}
+function fmtMonth(y,m){ // 0-indexed m → 'YYYY-MM'
+  return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+
+// Storage key includes month + period so W1/W2/monthly are independent
+function storeKey(m, period){ return `apg_${m}_${period}`; }
+
+function load(m, period){
+  try{ const r=localStorage.getItem(storeKey(m,period)); return r?JSON.parse(r):{targets:{},actuals:{}}; }
+  catch(e){ return {targets:{},actuals:{}}; }
+}
+function save(m, period, data){
+  try{ localStorage.setItem(storeKey(m,period), JSON.stringify(data)); } catch(e){}
+}
+
+function gd(m, period, mode, dept, k){
+  // CEO reads actuals from submitted snapshot (remote via getSubmission, then local fallback)
+  if(mode==='actuals' && S.role==='ceo'){
+    const sub = getSubmission(dept, m, period);
+    if(sub && sub.actuals && sub.actuals[k]!==undefined) return sub.actuals[k];
+    return '';
+  }
+  const d=load(m,period);
+  const src=(d[mode]||{})[dept]||{};
+  if(src[k]!==undefined) return src[k];
+  if(mode==='targets') return (DEF[dept]||{})[k]!==undefined ? (DEF[dept]||{})[k] : '';
+  return '';
+}
+function sd(m, period, mode, dept, k, v){
+  const d=load(m,period);
+  if(!d[mode]) d[mode]={};
+  if(!d[mode][dept]) d[mode][dept]={};
+  d[mode][dept][k]=v;
+  save(m,period,d);
+}
+
+// CEO targets are always stored on 'month' period regardless of current view
+function getTarget(m, dept, k){
+  return gd(m,'month','targets',dept,k);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function nv(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function str(v){ return v!==null&&v!==undefined&&v!=='' ? String(v) : ''; }
+function pct(a,t){ if(!t||isNaN(t)||Number(t)===0)return null; return Math.min(100,Math.round((Number(a)/Number(t))*100)); }
+function rag(p){ if(p===null||p===undefined)return 'n'; if(p>=80)return 'g'; if(p>=50)return 'a'; return 'r'; }
+function fNGN(v){ if(!v&&v!==0)return '—'; const n=Number(v); if(n>=1e9)return '₦'+(n/1e9).toFixed(2)+'B'; if(n>=1e6)return '₦'+(n/1e6).toFixed(1)+'M'; if(n>=1e3)return '₦'+(n/1e3).toFixed(0)+'K'; return '₦'+n.toLocaleString(); }
+
+// ── RENDER ENGINE ─────────────────────────────────────────────────────────────
+function render(){ document.getElementById('app').innerHTML = S.li ? rDash() : rLogin(); }
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function rLogin(){
+  return `
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--page-bg)">
+    <div style="width:100%;max-width:400px">
+      <!-- Logo -->
+      <div style="margin-bottom:2.5rem;text-align:center">
+        <div style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--green);margin-bottom:16px;box-shadow:0 4px 12px rgba(27,138,60,.35)">
+          <span style="font-weight:700;font-size:16px;color:#fff;font-family:'JetBrains Mono',monospace">APG</span>
+        </div>
+        <div style="font-size:20px;font-weight:700;color:var(--ink)">Performance Dashboard</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Ajex Princeps Global · Reporting 2026</div>
+      </div>
+
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:1.75rem;box-shadow:0 4px 20px rgba(27,138,60,.08)">
+        <div style="margin-bottom:16px">
+          <label class="sm muted" style="display:block;margin-bottom:6px">Username</label>
+          <input type="text" id="li-u" placeholder="Enter your username" onkeydown="if(event.key==='Enter')document.getElementById('li-p').focus()" autocomplete="username" autocapitalize="none">
+        </div>
+        <div style="margin-bottom:20px">
+          <label class="sm muted" style="display:block;margin-bottom:6px">Password</label>
+          <input type="password" id="li-p" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password">
+        </div>
+        <button class="btn-green" onclick="doLogin()" style="width:100%;padding:10px;font-size:14px;letter-spacing:.02em">Sign in →</button>
+        <div id="li-e" class="sm" style="color:var(--red);margin-top:10px;display:none"></div>
+        <div class="sep" style="margin:18px 0 14px"></div>
+        <div class="xs muted2" style="line-height:1.8">
+          Contact your CEO if you have not received your username or password.
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function doLogin(){
+  const u=(document.getElementById('li-u').value||'').trim().toLowerCase();
+  const p=document.getElementById('li-p').value;
+  const e=document.getElementById('li-e');
+  if(!u){ e.style.display=''; e.textContent='Please enter your username.'; return; }
+  if(!CREDS[u]){ e.style.display=''; e.textContent='Username not recognised.'; return; }
+  if(CREDS[u]!==p){ e.style.display=''; e.textContent='Incorrect password.'; return; }
+  S.li=true; S.role=u; S.dv=ACCESS[u][0]; S.period='month';
+  render();
+  // Load remote data after login
+  setTimeout(initFromApi, 100);
+}
+function doLogout(){ S={li:false,role:null,month:cm(),period:'month',dv:'sdl',tm:false}; render(); }
+function switchDept(d){ S.dv=d; render(); loadComments(d, S.month, S.period); }
+function switchMonth(v){ S.month=v; render(); }
+
+function stepMonth(dir){
+  const {y, m} = parseMonth(S.month);
+  let nm = m + dir;
+  let ny = y;
+  if(nm < 0){ nm=11; ny--; }
+  if(nm > 11){ nm=0; ny++; }
+  const minY=2025; const maxY=2027;
+  if(ny < minY || ny > maxY) return;
+  S.month = fmtMonth(ny, nm);
+  render();
+}
+
+function switchMonthYear(part, val){
+  const {y, m} = parseMonth(S.month);
+  if(part==='year')  S.month = fmtMonth(parseInt(val), m);
+  if(part==='month') S.month = fmtMonth(y, parseInt(val));
+  render();
+}
+function switchPeriod(v){ S.period=v; render(); }
+
+// ── DASHBOARD SHELL ───────────────────────────────────────────────────────────
+function rDash(){
+  const isCEO = S.role==='ceo';
+  const acc = ACCESS[S.role];
+  const mo = months();
+  const mLabel = mo.find(o=>o.v===S.month)?.l || S.month;
+  const pLabel = PERIODS.find(p=>p.v===S.period)?.l || S.period;
+  const {y:curY, m:curMIdx} = parseMonth(S.month);
+  const yearSel = monthYears().map(y=>`<option value="${y}"${y===curY?' selected':''}>${y}</option>`).join('');
+  const monthNameSel = MONTH_NAMES.map((n,i)=>`<option value="${i}"${i===curMIdx?' selected':''}>${n}</option>`).join('');
+
+  const periodTabs = PERIODS.map(p=>`
+    <button class="period-tab${S.period===p.v?' active':''}" onclick="switchPeriod('${p.v}')">${p.l}</button>
+  `).join('');
+
+  const deptTabs = acc.map(d=>`
+    <button onclick="switchDept('${d}')" style="
+      padding:7px 16px; font-size:13px; border-radius:7px; font-weight:500;
+      ${S.dv===d
+        ? 'background:var(--black);color:#fff;border-color:var(--black);box-shadow:0 2px 6px rgba(0,0,0,.18);'
+        : 'background:var(--white);color:var(--muted);border-color:var(--border);'
+      }">${DNAMES[d]}</button>
+  `).join('');
+
+  const mode = S.tm&&isCEO ? 'targets' : 'actuals';
+
+  const fns = {sdl:rSDL, ops:rOps, mkt:rMkt, fin:rFin, hr:rHR};
+
+  const targetBanner = S.tm && isCEO ? `
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-weight:600;color:var(--amber);font-size:13px">Setting monthly targets · ${mLabel}</div>
+        <div style="font-size:11px;color:var(--amber);opacity:.7;margin-top:2px">These targets will be visible to department leads as their goals</div>
+      </div>
+      <button onclick="S.tm=false;render()" class="btn-green" style="font-size:12px;padding:5px 14px">Save & exit</button>
+    </div>` : '';
+
+  return `
+  <div style="min-height:100vh;background:var(--page-bg)">
+    <!-- Topbar -->
+    <div style="background:var(--black);border-bottom:2px solid var(--green);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(27,138,60,.12)" class="no-print">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:30px;height:30px;border-radius:8px;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(27,138,60,.4)">
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;color:#fff">APG</span>
+        </div>
+        <div>
+          <span style="font-weight:600;font-size:13px;color:#fff">Performance Dashboard</span>
+          <span style="font-size:11px;color:rgba(255,255,255,.5);margin-left:8px">${LABELS[S.role]}</span>
+        </div>
+        <span class="api-dot ${S.apiStatus}" title="API: ${S.apiStatus==='ok'?'Connected':'Not connected'}"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:4px">
+          <button onclick="stepMonth(-1)" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;font-size:16px;border-radius:6px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff" title="Previous month">‹</button>
+          <select onchange="switchMonthYear('year',this.value)" id="sel-year" style="width:auto;font-size:12px;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff">${yearSel}</select>
+          <select onchange="switchMonthYear('month',this.value)" id="sel-month" style="width:auto;font-size:12px;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff">${monthNameSel}</select>
+          <button onclick="stepMonth(1)" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;font-size:16px;border-radius:6px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff" title="Next month">›</button>
+        </div>
+        ${isCEO ? `<button onclick="refreshRemote()" style="font-size:11px;padding:5px 10px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2)" title="Refresh data from server">↻ Refresh</button>` : ''}
+        ${isCEO ? `<button onclick="S.tm=!S.tm;render()" style="font-size:12px;padding:5px 12px;border-radius:6px;background:${S.tm?'rgba(217,119,6,.25)':'rgba(255,255,255,.15)'};color:${S.tm?'#FCD34D':'#fff'};border:1px solid ${S.tm?'rgba(217,119,6,.5)':'rgba(255,255,255,.3)'}">${S.tm?'Exit targets':'Set targets'}</button>` : ''}
+        ${!isCEO ? `<button onclick="S.showHistory=!S.showHistory;render()" style="font-size:12px;padding:5px 12px;border-radius:6px;background:${S.showHistory?'rgba(27,138,60,.4)':'rgba(255,255,255,.15)'};color:#fff;border:1px solid rgba(255,255,255,.3)">📋 ${S.showHistory?'Hide history':'My history'}</button>` : ''}
+        <button onclick="window.print()" style="font-size:11px;padding:5px 10px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2)" title="Print / Save as PDF">🖨 Print</button>
+        <button onclick="openApiModal()" style="font-size:11px;padding:5px 10px;border-radius:6px;background:#d4a017;color:#000;border:none;font-weight:700" title="API Setup">⚙ API</button>
+        <button onclick="doLogout()" style="font-size:12px;padding:5px 12px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2)">Sign out</button>
+      </div>
+    </div>
+
+    <div style="padding:20px;max-width:1280px;margin:0 auto;color:var(--ink)">
+      ${isCEO && !S.tm ? rPulse() : ''}
+      ${targetBanner}
+
+      <!-- Period selector (shown to both CEO and leads, but CEO is monthly-only for targets) -->
+      ${!(S.tm && isCEO) ? `
+        <div style="margin-bottom:16px">
+          <div class="xs muted" style="margin-bottom:8px">Reporting period · ${mLabel}</div>
+          <div class="period-tabs" style="max-width:460px">${periodTabs}</div>
+        </div>` : ''}
+
+      <!-- Dept tabs -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">${deptTabs}</div>
+
+      <!-- Content -->
+      <div class="fade-up">
+        ${isCEO && !getApiUrl() ? `
+        <div style="background:#FEF9EC;border:2px solid #FCD34D;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:700;color:#92400E;font-size:14px">⚠ API not connected on this device</div>
+            <div style="font-size:12px;color:#92400E;margin-top:4px">You will only see reports submitted from this browser. Click <b>⚙ API</b> in the top bar, paste the Apps Script URL, and click Refresh to load reports from all team members.</div>
+          </div>
+          <button onclick="openApiModal()" style="background:#D97706;border:none;color:#fff;font-weight:700;font-size:12px;padding:9px 18px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0">⚙ Connect now</button>
+        </div>` : ''}
+        ${isCEO && S.apiStatus==='error' ? `
+        <div style="background:#FEF2F2;border:2px solid #FCA5A5;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:700;color:#DC2626;font-size:13px">✕ Could not reach the Apps Script backend</div>
+            <div style="font-size:12px;color:#DC2626;margin-top:3px">Check that your Web App URL is correct and that the deployment is live. Then click Refresh.</div>
+          </div>
+          <button onclick="refreshRemote()" style="background:#DC2626;border:none;color:#fff;font-weight:700;font-size:12px;padding:9px 18px;border-radius:6px;cursor:pointer;flex-shrink:0">↻ Retry</button>
+        </div>` : ''}
+        ${(fns[S.dv]||rSDL)(S.month, S.period, mode, mLabel, pLabel)}
+        ${renderCustomKpis(S.dv, S.month, S.period, isCEO)}
+        ${!isCEO && !S.tm ? rSubmitPanel(S.role, S.month, S.period, mLabel, pLabel) : ''}
+        ${isCEO && !S.tm ? rCeoActions(S.dv, S.month, S.period) : ''}
+        ${!S.tm ? rCommentsPanel(S.dv, S.month, S.period, isCEO) : ''}
+        ${S.showHistory ? rHistoryPanel(S.role) : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── PULSE (CEO only) ──────────────────────────────────────────────────────────
+function rPulse(){
+  const m=S.month; const per='month';
+  function pc(lb,val,sb,st){
+    const cc={'g':['#E8F5E9','#2E7D32'],'a':['#FFF8E1','#E65100'],'r':['#FFEBEE','#C62828'],'n':['var(--black4)','var(--border)']}[st];
+    return `<div style="background:${cc[0]};border:1px solid ${cc[1]};border-radius:10px;padding:14px 16px;min-width:0">
+      <div style="font-size:11px;color:${cc[1]};font-weight:600;margin-bottom:6px;opacity:.7">${lb}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;line-height:1.1;margin-bottom:4px;color:var(--ink)">${val}</div>
+      <div style="font-size:11px;color:var(--muted)">${sb}</div>
+    </div>`;
+  }
+  const srevA=nv(gd(m,per,'actuals','sdl','rev_actual')); const srevT=nv(getTarget(m,'sdl','rev_target'))||DEF.sdl.rev_target;
+  const orevA=nv(gd(m,per,'actuals','ops','rev_actual')); const orevT=nv(getTarget(m,'ops','rev_target'))||DEF.ops.rev_target;
+  const leads=nv(gd(m,per,'actuals','mkt','leads'));       const leadsT=nv(getTarget(m,'mkt','leads_min'))||DEF.mkt.leads_min;
+  const recv=parseFloat(gd(m,per,'actuals','fin','recv_pct')); const recvMax=nv(getTarget(m,'fin','recv_max_pct'))||DEF.fin.recv_max_pct;
+  const stock=parseFloat(gd(m,per,'actuals','ops','stockout'));
+  return `<div style="margin-bottom:20px">
+    <div style="margin-bottom:10px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--green3)">CEO Pulse · ${months().find(o=>o.v===m)?.l||m.replace('-',' ')}</div>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">
+      ${pc('SDL revenue',srevA?fNGN(srevA):'No data','vs '+fNGN(srevT),pct(srevA,srevT)!==null?rag(pct(srevA,srevT)):'n')}
+      ${pc('Ops revenue',orevA?fNGN(orevA):'No data','vs '+fNGN(orevT),pct(orevA,orevT)!==null?rag(pct(orevA,orevT)):'n')}
+      ${pc('Mkt leads',leads||'No data','target '+leadsT+'–'+(leadsT*1.5|0),pct(leads,leadsT)!==null?rag(pct(leads,leadsT)):'n')}
+      ${pc('Overdue recv.',!isNaN(recv)&&recv!==''?recv+'%':'No data','max '+recvMax+'%',!isNaN(recv)?recv<=recvMax?'g':'r':'n')}
+      ${pc('Stock-out rate',!isNaN(stock)&&stock!==''?stock+'%':'No data','must stay <5%',!isNaN(stock)?stock<=5?'g':'r':'n')}
+    </div>
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-right:4px">Submission status · ${PERIODS.find(p=>p.v===S.period)?.l||S.period}:</span>
+      ${['sdl','ops','mkt','fin','hr'].map(d=>{
+        const sub = getSubmission(d, m, S.period);
+        const t = sub ? new Date(sub.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
+        return `<span title="${t?'Submitted '+t:'Not yet submitted'}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${sub?'#E8F5E9':'var(--amber-bg)'};color:${sub?'var(--green3)':'var(--amber)'};border:1px solid ${sub?'#A5D6A5':'#FCD34D'}">${sub?'✓':'⚠'} ${DNAMES[d]}</span>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+// ── INPUT HELPERS ─────────────────────────────────────────────────────────────
+function inp(m, per, mode, dept, k, ph, tp='number'){
+  const v=gd(m,per,mode,dept,k);
+  const ro = mode==='actuals' && S.role==='ceo';
+  if(ro) return `<input type="text" value="${v||'—'}" disabled style="background:var(--black4);font-size:13px">`;
+  return `<input type="${tp}" value="${v}" placeholder="${ph}" onchange="sd('${m}','${per}','${mode}','${dept}','${k}',this.value)" style="font-size:13px">`;
+}
+function sel_inp(m, per, mode, dept, k, opts){
+  const cur=str(gd(m,per,mode,dept,k));
+  const ro = mode==='actuals' && S.role==='ceo';
+  if(ro) return `<input type="text" value="${cur||'—'}" disabled style="background:var(--black4);font-size:13px">`;
+  return `<select onchange="sd('${m}','${per}','${mode}','${dept}','${k}',this.value)" style="font-size:13px">
+    ${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${o||'Select…'}</option>`).join('')}
+  </select>`;
+}
+function txt_inp(m, per, mode, dept, k, ph){
+  const v=str(gd(m,per,mode,dept,k));
+  const ro = mode==='actuals' && S.role==='ceo';
+  if(ro) return `<input type="text" value="${v||'—'}" disabled style="background:var(--black4);font-size:13px">`;
+  return `<input type="text" value="${v}" placeholder="${ph}" onchange="sd('${m}','${per}','${mode}','${dept}','${k}',this.value)" style="font-size:13px">`;
+}
+
+// Metric row — lead view shows target chip above, then actual input
+function mr(label, inputEl, hint, bp, note, targetChip){
+  const r=bp!==null&&bp!==undefined?rag(bp):'n';
+  const pc=bp!==null&&bp!==undefined;
+  return `<div class="metric-row">
+    ${targetChip?`<div class="tgt-chip"><span class="tgt-label">Target:</span> ${targetChip}</div>`:''}
+    <div class="metric-label">
+      <span>${label}</span>
+      ${pc?`<span class="pill pill-${r}" style="font-size:10px">${bp}%</span>`:''}
+    </div>
+    <div class="metric-input-wrap">
+      ${inputEl}
+      ${hint?`<span class="metric-hint">${hint}</span>`:''}
+    </div>
+    ${pc?`<div class="bar-track"><div class="bar-fill bar-${r}" style="width:${Math.max(0,Math.min(100,bp))}%"></div></div>`:''}
+    ${note?`<div class="metric-note">${note}</div>`:''}
+  </div>`;
+}
+
+// KPI card — targets shown as chips in lead view; includes a toggleable notes section
+function kc(title, wt, score, lc, content){
+  const acc = {teal:'#0d9488', blue:'#3b82f6', amber:'var(--amber)', purple:'#a855f7', green:'var(--green)', coral:'#f43f5e'}[lc]||'var(--border2)';
+  const r = score!==null&&score!==undefined?rag(score):'n';
+  // Derive a stable key from the title
+  const noteKey = 'kpi_note__'+title.replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  const noteId  = 'note_panel_'+noteKey+'_'+Math.random().toString(36).slice(2,7);
+  const noteVal = str(gd(S.month, S.period, 'actuals', S.dv, noteKey));
+  const hasNote = noteVal.length > 0;
+  const isCEO   = S.role === 'ceo';
+
+  return `<div class="card" style="border-top:2px solid ${acc}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-weight:600;font-size:14px;color:var(--ink)">${title}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${score!==null&&score!==undefined?`<span class="pill pill-${r} mono" style="font-size:11px">${score}/100</span>`:''}
+        ${wt?`<span class="pill pill-b" style="font-size:10px">${wt} pts</span>`:''}
+        <button onclick="toggleKpiNote('${noteId}')" style="font-size:11px;padding:3px 9px;background:${hasNote?'var(--green-bg)':'var(--white)'};color:${hasNote?'var(--green3)':'var(--muted)'};border-color:${hasNote?'var(--green)':'var(--border)'}" title="${hasNote?'View/edit note':'Add a note to this KPI'}">📝${hasNote?' Note':' Add note'}</button>
+      </div>
+    </div>
+    ${content}
+    <div id="${noteId}" style="display:${hasNote?'block':'none'};margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">📝 KPI Note — ${title}</div>
+      ${isCEO
+        ? `<div style="background:var(--white2);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 12px;font-size:13px;color:var(--ink);white-space:pre-wrap;min-height:36px">${noteVal||'<span style="color:var(--muted2)">No note submitted.</span>'}</div>`
+        : `<textarea onchange="sd('${S.month}','${S.period}','actuals','${S.dv}','${noteKey}',this.value)" style="width:100%;min-height:72px;resize:vertical;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;color:var(--ink);outline:none;line-height:1.5" placeholder="Add context, commentary or flags for this KPI area…">${noteVal}</textarea>`
+      }
+    </div>
+  </div>`;
+}
+
+function toggleKpiNote(id){
+  const el = document.getElementById(id);
+  if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+// Department header
+function dh(title, period, subtitle, score){
+  return `<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--green-bg)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div>
+        <h3 style="font-size:18px;font-weight:700;color:var(--ink)">${title}</h3>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${subtitle}</div>
+      </div>
+      ${score!==null&&score!==undefined?`<div style="text-align:right;flex-shrink:0">
+        <div class="xs muted" style="margin-bottom:3px">Score</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:${score>=80?'var(--green)':score>=50?'var(--amber)':'var(--red)'}">${score}<span style="font-size:14px;color:var(--muted)">/100</span></div>
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+function secLabel(l){ return `<div class="sec-label">${l}</div>`; }
+function nbox(t,g){ return `<div class="note-box${g?' green':''}">${t}</div>`; }
+
+// ════════════════════════════════════════════════════════════════════════════
+// SDL — Sales & Distribution Lead
+// ════════════════════════════════════════════════════════════════════════════
+function rSDL(m, per, mode, mLabel, pLabel){
+  const isCEO=S.role==='ceo'; const tm=mode==='targets';
+
+  // Targets (always read from monthly)
+  const revT    = nv(getTarget(m,'sdl','rev_target'))||DEF.sdl.rev_target;
+  const crT     = nv(getTarget(m,'sdl','cust_retail_t'))||DEF.sdl.cust_retail_t;
+  const cwT     = nv(getTarget(m,'sdl','cust_wholesale_t'))||DEF.sdl.cust_wholesale_t;
+  const teamT   = nv(getTarget(m,'sdl','team_pct_t'))||DEF.sdl.team_pct_t;
+  const rtmT    = nv(getTarget(m,'sdl','rtm_pct_t'))||DEF.sdl.rtm_pct_t; // kept for score compat
+  const repT    = nv(getTarget(m,'sdl','rep_pct_t'))||DEF.sdl.rep_pct_t;
+
+  // Actuals
+  const revA  = nv(gd(m,per,'actuals','sdl','rev_actual'));
+  const crA   = nv(gd(m,per,'actuals','sdl','cust_retail'));
+  const cwA   = nv(gd(m,per,'actuals','sdl','cust_wholesale'));
+  const teamA = nv(gd(m,per,'actuals','sdl','team_pct'));
+  const rtmA  = 0; // replaced by purchase/engage split
+  const repA  = nv(gd(m,per,'actuals','sdl','rep_pct'));
+
+  const revP  = pct(revA,revT);
+  const custP = pct(crA+cwA, crT+cwT);
+  const score = Math.round((revP||0)*.30+(custP||0)*.25+teamA*.20+rtmA*.15+repA*.10);
+
+  if(tm) return rSDL_targets(m, per, mLabel);
+
+  return `<div>
+    ${dh('Sales & Distribution Lead', pLabel, pLabel+' · '+mLabel, score)}
+
+    ${kc('Revenue Performance', 30, revP!==null?revP:null, 'green', `
+      ${mr('Revenue achieved (₦)', inp(m,per,'actuals','sdl','rev_actual','0','text'), '', revP, 'Target: '+fNGN(revT), fNGN(revT))}
+      ${mr('Retail revenue (₦)', inp(m,per,'actuals','sdl','rev_retail','0','text'), '', null, null, null)}
+      ${mr('Wholesale revenue (₦)', inp(m,per,'actuals','sdl','rev_wholesale','0','text'), '', null, null, null)}
+    `)}
+
+    ${kc('New Customer Acquisition', 25, custP!==null?custP:null, 'teal', `
+      ${mr('New retail outlets onboarded', inp(m,per,'actuals','sdl','cust_retail','0'), '', pct(crA,crT), 'Target: '+crT, crT+' outlets')}
+      ${mr('New wholesale distributors onboarded', inp(m,per,'actuals','sdl','cust_wholesale','0'), '', pct(cwA,cwT), 'Target: '+cwT, cwT+' distributors')}
+      ${mr('Lounges signed this period', inp(m,per,'actuals','sdl','lounges','0'), '', null, null, null)}
+      ${mr('Total active retail outlets (cumulative)', inp(m,per,'actuals','sdl','total_retail','0'), '', null, null, null)}
+      ${mr('Total active wholesale distributors (cumulative)', inp(m,per,'actuals','sdl','total_wholesale','0'), '', null, null, null)}
+    `)}
+
+    ${kc('Sales Team Leadership', 20, teamA?teamA:null, 'teal', `
+      ${mr('% of reps hitting individual target', inp(m,per,'actuals','sdl','team_pct','0'), '%', teamA, 'Aggregate across all reps', teamT+'%')}
+      ${mr('Sales reps active (headcount)', inp(m,per,'actuals','sdl','rep_count','0'), '', null, null, null)}
+      ${mr('Reps recruited this period', inp(m,per,'actuals','sdl','reps_recruited','0'), '', null, null, null)}
+      ${mr('Team training sessions conducted', inp(m,per,'actuals','sdl','team_training','0'), 'sessions', null, null, null)}
+      ${mr('Team performance actions taken', txt_inp(m,per,'actuals','sdl','team_actions','Describe actions…'), '', null, null, null)}
+    `)}
+
+    ${(()=>{
+      const totalOutlets  = nv(gd(m,per,'actuals','sdl','rtm_total'));
+      const purchasedCnt  = nv(gd(m,per,'actuals','sdl','rtm_purchased'));
+      const engagedCnt    = nv(gd(m,per,'actuals','sdl','rtm_engaged'));
+      const purchasedPct  = totalOutlets>0 ? Math.round(purchasedCnt/totalOutlets*100) : null;
+      const engagedPct    = totalOutlets>0 ? Math.round(engagedCnt/totalOutlets*100)   : null;
+      const purchasedT    = nv(getTarget(m,'sdl','rtm_purchase_pct_t'))||60;
+      const engagedT      = nv(getTarget(m,'sdl','rtm_engage_pct_t'))||80;
+      const rtmScore      = (purchasedPct!==null||engagedPct!==null)
+        ? Math.round(((purchasedPct!==null?pct(purchasedPct,purchasedT):0)|0)*0.5 + ((engagedPct!==null?pct(engagedPct,engagedT):0)|0)*0.5)
+        : null;
+      const pBar = (val,tgt,lbl) => {
+        const p=val!==null?pct(val,tgt):null; const r=p!==null?rag(p):'n';
+        return val!==null?
+          '<div style="background:var(--green-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">'+
+          '<span class="sm muted">'+lbl+'</span>'+
+          '<span style="font-family:JetBrains Mono,monospace;font-size:22px;font-weight:700;color:'+(p>=tgt?'var(--green)':p>=tgt*.6?'var(--amber)':'var(--red)')+'">'+val+'%</span>'+
+          '</div>':'';
+      };
+      return kc('Route-to-Market & Territory Coverage', 15, rtmScore, 'teal',
+        mr('Total outlets / customers in your territory', inp(m,per,'actuals','sdl','rtm_total','0'), 'assigned total', null, 'Enter your full territory size — all % rates calculate from this number', null) +
+        '<div class="sep"></div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px">Purchase rate — % of territory that bought</div>' +
+        mr('Outlets / customers that made a purchase this period', inp(m,per,'actuals','sdl','rtm_purchased','0'), 'count', purchasedPct!==null?pct(purchasedPct,purchasedT):null, totalOutlets>0?purchasedPct+'% of territory purchased':'Enter territory size above first', purchasedT+'% target') +
+        pBar(purchasedPct, purchasedT, 'Purchase rate this period') +
+        '<div class="sep"></div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px">Engagement rate — % of territory contacted or active</div>' +
+        mr('Outlets / customers engaged this period (call, visit or order placed)', inp(m,per,'actuals','sdl','rtm_engaged','0'), 'count', engagedPct!==null?pct(engagedPct,engagedT):null, totalOutlets>0?engagedPct+'% of territory engaged':'Enter territory size above first', engagedT+'% target') +
+        '<div style="background:var(--green-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--muted);margin-bottom:8px">Counts as engaged: any outlet reached by phone call, physical visit, or who placed an order</div>' +
+        pBar(engagedPct, engagedT, 'Engagement rate this period') +
+        mr('RTM strategy notes', txt_inp(m,per,'actuals','sdl','rtm_updates','Route changes, new areas, obstacles this period…'), '', null, null, null)
+      );
+    })()}
+
+    ${kc('Reporting & Operational Discipline', 10, repA?repA:null, 'teal', `
+      ${mr('Weekly reports submitted on time (%)', inp(m,per,'actuals','sdl','rep_pct','0'), '%', repA, repT+'% target · 4 reports per month expected', repT+'%')}
+      ${mr('Dashboards submitted on time (%)', inp(m,per,'actuals','sdl','dash_pct','0'), '%', null, null, null)}
+      ${mr('Performance insights provided to management', sel_inp(m,per,'actuals','sdl','insights',['','Yes','No']), '', null, null, null)}
+    `)}
+  </div>`;
+}
+
+function rSDL_targets(m, per, mLabel){
+  return `<div>
+    ${dh('Sales & Distribution Lead — Set Targets', 'Monthly', 'Monthly targets for '+mLabel, null)}
+    ${kc('Revenue Performance', 30, null, 'green', `
+      ${mr('Monthly revenue target (₦)', inp(m,'month','targets','sdl','rev_target','50000000','text'), '', null, null, null)}
+    `)}
+    ${kc('New Customer Acquisition', 25, null, 'teal', `
+      ${mr('New retail outlets target', inp(m,'month','targets','sdl','cust_retail_t','10'), 'per month', null, null, null)}
+      ${mr('New wholesale/distributors target', inp(m,'month','targets','sdl','cust_wholesale_t','5'), 'per month', null, null, null)}
+    `)}
+    ${kc('Sales Team Leadership', 20, null, 'teal', `
+      ${mr('Team KPI achievement rate target (%)', inp(m,'month','targets','sdl','team_pct_t','80'), '%', null, null, null)}
+    `)}
+    ${kc('Route-to-Market Coverage', 15, null, 'teal', `
+      ${mr('Purchase rate target — % of territory that must buy (%)', inp(m,'month','targets','sdl','rtm_purchase_pct_t','60'), '%', null, '% of total outlets / customers expected to make a purchase', null)}
+      ${mr('Engagement rate target — % of territory that must be contacted (%)', inp(m,'month','targets','sdl','rtm_engage_pct_t','80'), '%', null, 'Call + visit + order — combined engagement target', null)}
+    `)}
+    ${kc('Reporting & Discipline', 10, null, 'teal', `
+      ${mr('Weekly reports on time target (%)', inp(m,'month','targets','sdl','rep_pct_t','100'), '%', null, null, null)}
+    `)}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// OPERATIONS
+// ════════════════════════════════════════════════════════════════════════════
+function rOps(m, per, mode, mLabel, pLabel){
+  const tm=mode==='targets';
+  if(tm) return rOps_targets(m, per, mLabel);
+
+  const revT  = nv(getTarget(m,'ops','rev_target'))||DEF.ops.rev_target;
+  const wrevT = nv(getTarget(m,'ops','wrev_target'))||DEF.ops.wrev_target;
+  const prodT = nv(getTarget(m,'ops','prod_target'))||DEF.ops.prod_target;
+  const nrT   = nv(getTarget(m,'ops','new_retail_t'))||DEF.ops.new_retail_t;
+  const nwT   = nv(getTarget(m,'ops','new_wholesale_t'))||DEF.ops.new_wholesale_t;
+
+  const revA  = nv(gd(m,per,'actuals','ops','rev_actual'));
+  const wrevA = nv(gd(m,per,'actuals','ops','wrev_actual'));
+  const prodA = nv(gd(m,per,'actuals','ops','prod_actual'));
+  const nrA   = nv(gd(m,per,'actuals','ops','new_retail'));
+  const nwA   = nv(gd(m,per,'actuals','ops','new_wholesale'));
+  const stockA = parseFloat(gd(m,per,'actuals','ops','stockout'));
+  const fulfilA= parseFloat(gd(m,per,'actuals','ops','fulfil'));
+
+  const revP  = pct(revA,revT); const wrevP = pct(wrevA,wrevT); const prodP = pct(prodA,prodT);
+  const nrP=pct(nrA,nrT); const nwP=pct(nwA,nwT);
+  const stockScore=!isNaN(stockA)&&stockA!==''?(stockA<=5?100:Math.max(0,100-Math.round((stockA-5)*20))):null;
+  const fulfilScore=!isNaN(fulfilA)&&fulfilA!==''?(fulfilA<=48?100:Math.max(0,100-Math.round((fulfilA-48)*5))):null;
+  const wBonus=wrevP!==null?(wrevP>=100?'0.025%':wrevP>=80?'0.020%':'0.015%'):'—';
+
+  return `<div>
+    ${dh('Operations Manager', pLabel, pLabel+' · '+mLabel, null)}
+
+    ${kc('Revenue Execution', '—', revP!==null?revP:null, 'green', `
+      ${mr('Total revenue achieved (₦)', inp(m,per,'actuals','ops','rev_actual','0','text'), '', revP, 'Target: '+fNGN(revT), fNGN(revT))}
+      ${mr('Retail revenue component (₦)', inp(m,per,'actuals','ops','rev_retail','0','text'), '', null, null, null)}
+      ${mr('Wholesale revenue component (₦)', inp(m,per,'actuals','ops','rev_wholesale','0','text'), '', null, null, null)}
+    `)}
+
+    ${kc('Distribution Expansion', '—', pct(nrA+nwA,nrT+nwT), 'blue', `
+      ${mr('New retail outlets onboarded', inp(m,per,'actuals','ops','new_retail','0'), '', nrP, 'Target: min '+nrT+' per month', 'Min '+nrT)}
+      ${mr('New wholesale outlets onboarded', inp(m,per,'actuals','ops','new_wholesale','0'), '', nwP, 'Target: min '+nwT+' per month', 'Min '+nwT)}
+      ${mr('Total cumulative distribution network', inp(m,per,'actuals','ops','total_network','0'), 'outlets', null, null, null)}
+    `)}
+
+    ${kc('Sales Team Productivity', '—', prodP!==null?prodP:null, 'blue', `
+      ${mr('Avg retail sale per rep (₦)', inp(m,per,'actuals','ops','prod_actual','0','text'), '', prodP, 'Target: '+fNGN(prodT), fNGN(prodT))}
+      ${mr('Total active sales reps', inp(m,per,'actuals','ops','reps_count','0'), 'headcount', null, null, null)}
+      ${mr('Total retail revenue (₦)', inp(m,per,'actuals','ops','retail_total','0','text'), '', null, 'Sanity check: avg × headcount', null)}
+    `)}
+
+    ${kc('Wholesale Revenue Target', '—', wrevP!==null?wrevP:null, 'blue', `
+      ${mr('Wholesale revenue achieved (₦)', inp(m,per,'actuals','ops','wrev_actual','0','text'), '', wrevP, 'Bonus tier: '+wBonus+' of wholesale revenue', fNGN(wrevT))}
+      ${nbox('Bonus: ≥100% → 0.025% · 80–99% → 0.020% · Below 80% → 0.015% of wholesale revenue<br>Current tier: <strong style="color:var(--green)">'+wBonus+'</strong>', true)}
+    `)}
+
+    ${kc('Operational Efficiency', '—', null, 'blue', `
+      ${nbox('Stock-out rate must stay below 5% · Order fulfilment time must stay below 48 hours')}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          ${mr('Stock-out rate (%)', inp(m,per,'actuals','ops','stockout','0'), '', stockScore, 'Target: below 5%', '<5%')}
+        </div>
+        <div>
+          ${mr('Order fulfilment (hours)', inp(m,per,'actuals','ops','fulfil','0'), '', fulfilScore, 'Target: below 48 hrs', '<48 hrs')}
+        </div>
+      </div>
+      ${mr('SKUs currently out of stock', inp(m,per,'actuals','ops','skus_oos','0'), 'count', null, null, null)}
+      ${mr('Late orders this period', inp(m,per,'actuals','ops','late_orders','0'), '(target: 0)', null, null, null)}
+    `)}
+  </div>`;
+}
+function rOps_targets(m, per, mLabel){
+  return `<div>
+    ${dh('Operations Manager — Set Targets', 'Monthly', 'Monthly targets for '+mLabel, null)}
+    ${kc('Revenue Execution','—',null,'green', mr('Monthly revenue target (₦)',inp(m,'month','targets','ops','rev_target','1219680000','text'),'',null,'Default: ₦1,219,680,000',null))}
+    ${kc('Wholesale Revenue','—',null,'blue', mr('Wholesale revenue target (₦)',inp(m,'month','targets','ops','wrev_target','843853500','text'),'',null,'Default: ₦843,853,500',null))}
+    ${kc('Sales Team Productivity','—',null,'blue', mr('Avg sale per rep target (₦)',inp(m,'month','targets','ops','prod_target','60984000','text'),'',null,'Default: ₦60,984,000',null))}
+    ${kc('Distribution Expansion','—',null,'blue',
+      mr('New retail outlets target',inp(m,'month','targets','ops','new_retail_t','10'),'per month',null,null,null)+
+      mr('New wholesale outlets target',inp(m,'month','targets','ops','new_wholesale_t','5'),'per month',null,null,null)
+    )}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MARKETING
+// ════════════════════════════════════════════════════════════════════════════
+function rMkt(m, per, mode, mLabel, pLabel){
+  const tm=mode==='targets';
+  if(tm) return rMkt_targets(m, per, mLabel);
+
+  const lT=nv(getTarget(m,'mkt','leads_min'))||DEF.mkt.leads_min;
+  const lmT=nv(getTarget(m,'mkt','leads_max'))||DEF.mkt.leads_max;
+  const liT=nv(getTarget(m,'mkt','lift_pct'))||DEF.mkt.lift_pct;
+  const uT=nv(getTarget(m,'mkt','ush_rev'))||DEF.mkt.ush_rev;
+  const jT=nv(getTarget(m,'mkt','jumia_rev'))||DEF.mkt.jumia_rev;
+  const kT=nv(getTarget(m,'mkt','konga_rev'))||DEF.mkt.konga_rev;
+  const grT=nv(getTarget(m,'mkt','greenroom_rev'))||DEF.mkt.greenroom_rev;
+  const actT=nv(getTarget(m,'mkt','activations'))||DEF.mkt.activations;
+  const actAT=nv(getTarget(m,'mkt','activations_attend'))||DEF.mkt.activations_attend;
+  const awT=nv(getTarget(m,'mkt','awareness_camps'))||DEF.mkt.awareness_camps;
+  const whaT=nv(getTarget(m,'mkt','wholesale_acts'))||DEF.mkt.wholesale_acts;
+  const fgT=nv(getTarget(m,'mkt','follow_pct'))||DEF.mkt.follow_pct;
+  const fgmT=nv(getTarget(m,'mkt','follow_pct_max'))||DEF.mkt.follow_pct_max;
+  const enT=nv(getTarget(m,'mkt','engage_pct'))||DEF.mkt.engage_pct;
+  const infT=nv(getTarget(m,'mkt','influencers'))||DEF.mkt.influencers;
+  const reachT=nv(getTarget(m,'mkt','reach'))||DEF.mkt.reach;
+  const r1T=nv(getTarget(m,'mkt','roas_social'))||DEF.mkt.roas_social;
+  const r2T=nv(getTarget(m,'mkt','roas_trad'))||DEF.mkt.roas_trad;
+
+  const leadsA=nv(gd(m,per,'actuals','mkt','leads')); const liA=nv(gd(m,per,'actuals','mkt','lift_pct'));
+  const uA=nv(gd(m,per,'actuals','mkt','ush_rev'));    const jA=nv(gd(m,per,'actuals','mkt','jumia_rev'));
+  const kA=nv(gd(m,per,'actuals','mkt','konga_rev'));  const grA=nv(gd(m,per,'actuals','mkt','greenroom_rev'));
+  const actA=nv(gd(m,per,'actuals','mkt','activations')); const actAA=nv(gd(m,per,'actuals','mkt','activations_attended'));
+  const awA=nv(gd(m,per,'actuals','mkt','awareness_camps')); const whaA=nv(gd(m,per,'actuals','mkt','wholesale_acts'));
+  const fgA=nv(gd(m,per,'actuals','mkt','follow_pct')); const enA=nv(gd(m,per,'actuals','mkt','engage_pct'));
+  const infA=nv(gd(m,per,'actuals','mkt','influencers')); const reachA=nv(gd(m,per,'actuals','mkt','reach'));
+  const r1A=nv(gd(m,per,'actuals','mkt','roas_social')); const r2A=nv(gd(m,per,'actuals','mkt','roas_trad'));
+
+  return `<div>
+    ${dh('Marketing & Communications Lead', pLabel, pLabel+' · '+mLabel, null)}
+
+    ${kc('Campaign Impact on Revenue', '—', Math.round(((pct(liA,liT)||0)+(pct(leadsA,lT)||0))/2), 'amber', `
+      ${mr('Campaign sales lift achieved (%)', inp(m,per,'actuals','mkt','lift_pct','0'), '%', pct(liA,liT), 'Target: ≥'+liT+'%', '≥'+liT+'%')}
+      ${mr('Qualified leads generated (retailers + distributors + lounges)', inp(m,per,'actuals','mkt','leads','0'), '', pct(leadsA,lT), 'Target: '+lT+'–'+lmT+' per month', lT+'–'+lmT)}
+    `)}
+
+    ${kc('Revenue Generation (Platform Targets)', '—', null, 'amber', `
+      ${mr('USH Social (IG, TikTok, Twitter) revenue (₦)', inp(m,per,'actuals','mkt','ush_rev','0','text'), '', pct(uA,uT), 'Target: '+fNGN(uT), fNGN(uT))}
+      ${mr('Jumia revenue (₦)', inp(m,per,'actuals','mkt','jumia_rev','0','text'), '', pct(jA,jT), 'Target: '+fNGN(jT), fNGN(jT))}
+      ${mr('Konga revenue (₦)', inp(m,per,'actuals','mkt','konga_rev','0','text'), '', pct(kA,kT), 'Target: '+fNGN(kT), fNGN(kT))}
+      ${mr('Greenroom Social revenue (₦)', inp(m,per,'actuals','mkt','greenroom_rev','0','text'), '', pct(grA,grT), 'Target: '+fNGN(grT), fNGN(grT))}
+    `)}
+
+    ${kc('Zaza GTM Execution', '—', null, 'amber', `
+      ${nbox('Retailer activation events must be conducted in conjunction with the Sales Team · Awareness campaign must run on all platforms throughout the month · Campaigns must run constantly')}
+      ${mr('Retailer activation events conducted', inp(m,per,'actuals','mkt','activations','0'), '', pct(actA,actT), 'Target: '+actT+'/month', actT+' events')}
+      ${mr('Events personally attended by Lead', inp(m,per,'actuals','mkt','activations_attended','0'), '', pct(actAA,actAT), 'Target: attend '+actAT+' minimum', 'Attend '+actAT)}
+      ${mr('Product awareness campaigns run', inp(m,per,'actuals','mkt','awareness_camps','0'), '', pct(awA,awT), 'Marketing storm for new retail locations', awT+' campaigns')}
+      ${mr('Wholesaler & distributor activations', inp(m,per,'actuals','mkt','wholesale_acts','0'), '', pct(whaA,whaT), 'Target: '+whaT+' per month', whaT+' activations')}
+      ${mr('Existing wholesaler/distributor promotional support', txt_inp(m,per,'actuals','mkt','existing_support','Describe support provided to existing network…'), '', null, null, null)}
+    `)}
+
+    ${kc('Digital Marketing', '—', Math.round(((pct(fgA,fgT)||0)+(pct(enA,enT)||0)+(pct(infA,infT)||0)+(pct(reachA,reachT)||0))/4), 'amber', `
+      ${mr('Avg monthly followership growth (%)', inp(m,per,'actuals','mkt','follow_pct','0'), '%', pct(fgA,fgT), 'USH + Greenroom — IG, TikTok AND Twitter', fgT+'–'+fgmT+'%')}
+      ${mr('Avg engagement rate (%)', inp(m,per,'actuals','mkt','engage_pct','0'), '%', pct(enA,enT), 'Target: >'+enT+'% on IG, TikTok, Twitter', '>'+enT+'%')}
+      ${mr('Influencer partnerships activated on Zaza Rolling Paper', inp(m,per,'actuals','mkt','influencers','0'), '', pct(infA,infT), 'Min '+infT+' partnerships', infT+' partnerships')}
+      ${mr('Social media awareness reach (people)', inp(m,per,'actuals','mkt','reach','0'), '', pct(reachA,reachT), 'Lagos, Ibadan and Abuja', reachT.toLocaleString()+' people')}
+      ${mr('Platforms running awareness campaign', sel_inp(m,per,'actuals','mkt','platforms',['','IG only','TikTok only','Twitter only','IG + TikTok','IG + Twitter','TikTok + Twitter','All three — IG + TikTok + Twitter']), '', null, 'Must run on all platforms throughout the month', null)}
+    `)}
+
+    ${kc('Marketing AD Efficiency (ROAS)', '—', Math.round(((pct(r1A,r1T)||0)+(pct(r2A,r2T)||0))/2), 'amber', `
+      ${mr('USH Social media ROAS achieved', inp(m,per,'actuals','mkt','roas_social','0'), '×', pct(r1A,r1T), 'Target: '+r1T+'× (Revenue on Ad Spend)', r1T+'×')}
+      ${mr('Traditional marketing ROAS achieved', inp(m,per,'actuals','mkt','roas_trad','0'), '×', pct(r2A,r2T), 'Target: '+r2T+'×', r2T+'×')}
+      ${mr('Social ad spend this period (₦)', inp(m,per,'actuals','mkt','social_adspend','0','text'), '', null, null, null)}
+      ${mr('Traditional ad spend this period (₦)', inp(m,per,'actuals','mkt','trad_adspend','0','text'), '', null, null, null)}
+    `)}
+  </div>`;
+}
+function rMkt_targets(m, per, mLabel){
+  return `<div>
+    ${dh('Marketing & Communications Lead — Set Targets', 'Monthly', 'Monthly targets for '+mLabel, null)}
+    ${kc('Campaign Impact', '—', null, 'amber',
+      mr('Campaign sales lift target (%)',inp(m,'month','targets','mkt','lift_pct','25'),'%',null,null,null)+
+      mr('Qualified leads minimum',inp(m,'month','targets','mkt','leads_min','100'),'per month',null,null,null)+
+      mr('Qualified leads maximum',inp(m,'month','targets','mkt','leads_max','150'),'per month',null,null,null))}
+    ${kc('Platform Revenue Targets', '—', null, 'amber',
+      mr('USH Social target (₦)',inp(m,'month','targets','mkt','ush_rev','2000000','text'),'',null,null,null)+
+      mr('Jumia target (₦)',inp(m,'month','targets','mkt','jumia_rev','150000','text'),'',null,null,null)+
+      mr('Konga target (₦)',inp(m,'month','targets','mkt','konga_rev','150000','text'),'',null,null,null)+
+      mr('Greenroom Social target (₦)',inp(m,'month','targets','mkt','greenroom_rev','150000','text'),'',null,null,null))}
+    ${kc('Zaza GTM Targets', '—', null, 'amber',
+      mr('Retailer activation events target',inp(m,'month','targets','mkt','activations','30'),'',null,null,null)+
+      mr('Events Lead must attend',inp(m,'month','targets','mkt','activations_attend','10'),'',null,null,null)+
+      mr('Awareness campaigns target',inp(m,'month','targets','mkt','awareness_camps','3'),'',null,null,null)+
+      mr('Wholesale activations target',inp(m,'month','targets','mkt','wholesale_acts','3'),'',null,null,null))}
+    ${kc('Digital Marketing Targets', '—', null, 'amber',
+      mr('Followership growth min (%)',inp(m,'month','targets','mkt','follow_pct','5'),'%',null,null,null)+
+      mr('Followership growth max (%)',inp(m,'month','targets','mkt','follow_pct_max','10'),'%',null,null,null)+
+      mr('Engagement rate target (%)',inp(m,'month','targets','mkt','engage_pct','6'),'%',null,null,null)+
+      mr('Influencer partnerships target',inp(m,'month','targets','mkt','influencers','2'),'',null,null,null)+
+      mr('Awareness reach target',inp(m,'month','targets','mkt','reach','500000'),'people',null,null,null))}
+    ${kc('ROAS Targets', '—', null, 'amber',
+      mr('Social ROAS target (×)',inp(m,'month','targets','mkt','roas_social','4'),'×',null,null,null)+
+      mr('Traditional ROAS target (×)',inp(m,'month','targets','mkt','roas_trad','4'),'×',null,null,null))}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FINANCE
+// ════════════════════════════════════════════════════════════════════════════
+function rFin(m, per, mode, mLabel, pLabel){
+  const tm=mode==='targets';
+  if(tm) return rFin_targets(m, per, mLabel);
+
+  const rdT = nv(getTarget(m,'fin','report_day'))||DEF.fin.report_day;
+  const rcT = nv(getTarget(m,'fin','recs_min'))||DEF.fin.recs_min;
+  const rvT = nv(getTarget(m,'fin','recv_max_pct'))||DEF.fin.recv_max_pct;
+  const foT = nv(getTarget(m,'fin','fund_opps'))||DEF.fin.fund_opps;
+
+  const rdA  = parseFloat(gd(m,per,'actuals','fin','report_day'));
+  const rcA  = nv(gd(m,per,'actuals','fin','recs_count'));
+  const rvA  = parseFloat(gd(m,per,'actuals','fin','recv_pct'));
+  const wkA  = nv(gd(m,per,'actuals','fin','weekly_aging'));
+  const ciA  = nv(gd(m,per,'actuals','fin','cost_inits'));
+  const fcA  = parseFloat(gd(m,per,'actuals','fin','forecast_cash'));
+  const acA  = parseFloat(gd(m,per,'actuals','fin','actual_cash'));
+  const sfA  = nv(gd(m,per,'actuals','fin','shortfall'));
+  const lqA  = parseFloat(gd(m,per,'actuals','fin','liquidity_weeks'));
+  const foA  = nv(gd(m,per,'actuals','fin','fund_opps'));
+
+  const rdScore = !isNaN(rdA)&&rdA>0?(rdA<=rdT?100:Math.max(0,100-(rdA-rdT)*20)):null;
+  const rcP = pct(rcA,rcT);
+  const rvScore = !isNaN(rvA)?(rvA<=rvT?100:Math.max(0,100-(rvA-rvT)*10)):null;
+  let fasScore=null; if(!isNaN(fcA)&&!isNaN(acA)&&acA>0){const err=Math.abs(fcA-acA)/acA*100; fasScore=Math.round(Math.max(0,100-err));}
+  const foP = pct(foA,foT);
+
+  return `<div>
+    ${dh('Head of Finance (Accountant)', pLabel, pLabel+' · '+mLabel, null)}
+
+    ${kc('Financial Reporting & Closing', 25, rdScore!==null?rdScore:null, 'purple', `
+      ${mr('Day statements were submitted', inp(m,per,'actuals','fin','report_day','0'), '', rdScore, 'Target: by day '+rdT+' · lower = better', 'By day '+rdT)}
+      ${mr('Income Statement submitted?', sel_inp(m,per,'actuals','fin','is_done',['','Yes','No']), '', null, null, null)}
+      ${mr('Balance Sheet submitted?', sel_inp(m,per,'actuals','fin','bs_done',['','Yes','No']), '', null, null, null)}
+      ${mr('Cash Flow Statement submitted?', sel_inp(m,per,'actuals','fin','cf_done',['','Yes','No']), '', null, null, null)}
+      ${mr('Expense breakdown included?', sel_inp(m,per,'actuals','fin','exp_breakdown',['','Yes','No']), '', null, null, null)}
+      ${mr('Budget vs actual analysis included?', sel_inp(m,per,'actuals','fin','bva_done',['','Yes','No']), '', null, null, null)}
+      ${mr('Weekly receivable aging reports submitted', inp(m,per,'actuals','fin','weekly_aging','0'), '/ 4 expected', pct(wkA,4), null, '4 per month')}
+    `)}
+
+    ${kc('Financial Analysis & CEO Recommendations', 20, rcP!==null?rcP:null, 'purple', `
+      ${mr('Revenue trend analysis completed?', sel_inp(m,per,'actuals','fin','rev_trend',['','Yes — positive trend','Yes — flat trend','Yes — negative trend','No']), '', null, null, null)}
+      ${mr('Cost pattern analysis completed?', sel_inp(m,per,'actuals','fin','cost_pattern',['','Yes','No']), '', null, null, null)}
+      ${mr('Profitability insights included?', sel_inp(m,per,'actuals','fin','profitability',['','Yes','No']), '', null, null, null)}
+      ${mr('Actionable CEO recommendations submitted', inp(m,per,'actuals','fin','recs_count','0'), '', rcP, 'Target: ≥'+rcT+' per month', '≥'+rcT+' per month')}
+      ${mr('Recommendations accepted or acted on by CEO', inp(m,per,'actuals','fin','recs_accepted','0'), 'count', null, null, null)}
+    `)}
+
+    ${kc('Receivables & Debt Recovery', 20, rvScore!==null?rvScore:null, 'purple', `
+      ${mr('Overdue receivables >30 days (% of total)', inp(m,per,'actuals','fin','recv_pct','0'), '%', rvScore, 'Must remain below '+rvT+'% at all times', '<'+rvT+'%')}
+      ${mr('Total receivables value (₦)', inp(m,per,'actuals','fin','recv_total','0','text'), '', null, null, null)}
+      ${mr('Amount overdue >30 days (₦)', inp(m,per,'actuals','fin','recv_overdue_val','0','text'), '', null, null, null)}
+      ${mr('Receivable tracking current?', sel_inp(m,per,'actuals','fin','recv_tracking',['','Yes — all weeks tracked','Partial','No']), '', null, 'Weekly tracking is mandatory', null)}
+    `)}
+
+    ${kc('Expense Management & Cost Control', 20, null, 'purple', `
+      ${nbox('Minimum 2 cost saving initiatives must be identified per quarter · Monthly expense analysis required')}
+      ${mr('Monthly expense analysis completed?', sel_inp(m,per,'actuals','fin','exp_analysis',['','Yes','No']), '', null, null, null)}
+      ${mr('Cost reduction opportunities identified', inp(m,per,'actuals','fin','cost_inits','0'), 'count', null, 'Monthly tally — 2 per quarter required', null)}
+      ${mr('Estimated savings value (₦)', inp(m,per,'actuals','fin','cost_inits_val','0','text'), '', null, null, null)}
+      ${mr('Initiative status', sel_inp(m,per,'actuals','fin','cost_status',['','Proposed','Implementing','Realised']), '', null, null, null)}
+      ${mr('Initiative category', txt_inp(m,per,'actuals','fin','cost_cat','e.g. procurement, operations, headcount…'), '', null, null, null)}
+      ${mr('Prior initiatives now implemented', inp(m,per,'actuals','fin','cost_implemented','0'), 'count', null, 'Track prior month proposals in implementation', null)}
+    `)}
+
+    ${kc('Cash Flow & Liquidity Management', 10, fasScore!==null?fasScore:null, 'purple', `
+      ${mr('Monthly cash flow forecast submitted?', sel_inp(m,per,'actuals','fin','cf_submitted',['','Yes','No']), '', null, null, null)}
+      ${mr('Forecasted closing cash balance (₦)', inp(m,per,'actuals','fin','forecast_cash','0','text'), '', null, null, null)}
+      ${mr('Actual closing cash balance (₦)', inp(m,per,'actuals','fin','actual_cash','0','text'), '', fasScore, fasScore!==null?'Forecast accuracy: '+fasScore+'%':'Enter both values to calculate', null)}
+      ${mr('Cash shortfall events this period', inp(m,per,'actuals','fin','shortfall','0'), '(target: 0)', sfA===0?100:Math.max(0,100-sfA*25), 'Any period where liquidity was insufficient', '0')}
+      ${mr('Current liquidity cover (weeks)', inp(m,per,'actuals','fin','liquidity_weeks','0'), 'weeks', !isNaN(lqA)?pct(lqA,4):null, 'Minimum 4 weeks recommended', '≥4 weeks')}
+    `)}
+
+    ${kc('Fundraising & Financial Strategy', 5, foP!==null?foP:null, 'purple', `
+      ${mr('Funding opportunities identified this period', inp(m,per,'actuals','fin','fund_opps','0'), '', foP, 'Bank financing + investors + grants. Min '+foT+'/month', '≥'+foT+' per month')}
+      ${mr('Bank financing opportunities explored', txt_inp(m,per,'actuals','fin','fund_bank','Name or describe…'), '', null, null, null)}
+      ${mr('Investor opportunities explored', txt_inp(m,per,'actuals','fin','fund_investor','Name or describe…'), '', null, null, null)}
+      ${mr('Grant opportunities explored', txt_inp(m,per,'actuals','fin','fund_grant','Name or describe…'), '', null, null, null)}
+      ${mr('Opportunities actively in pursuit', inp(m,per,'actuals','fin','fund_pursued','0'), 'count', null, null, null)}
+      ${mr('Total pipeline value (₦)', inp(m,per,'actuals','fin','fund_pipeline','0','text'), '', null, null, null)}
+      ${mr('Most advanced opportunity stage', sel_inp(m,per,'actuals','fin','fund_stage',['','Identified','Applied','In discussion','Term sheet received','Secured']), '', null, null, null)}
+    `)}
+  </div>`;
+}
+function rFin_targets(m, per, mLabel){
+  return `<div>
+    ${dh('Head of Finance — Set Targets', 'Monthly', 'Monthly targets for '+mLabel, null)}
+    ${kc('Reporting deadline',25,null,'purple', mr('Statements due by working day',inp(m,'month','targets','fin','report_day','5'),'(5 = 5th working day)',null,null,null))}
+    ${kc('CEO Recommendations',20,null,'purple', mr('Minimum recommendations per month',inp(m,'month','targets','fin','recs_min','3'),'',null,null,null))}
+    ${kc('Receivables',20,null,'purple', mr('Max overdue >30 days (%)',inp(m,'month','targets','fin','recv_max_pct','10'),'% of total',null,'Hard ceiling',null))}
+    ${kc('Fundraising',5,null,'purple', mr('Opportunities to explore per month (min)',inp(m,'month','targets','fin','fund_opps','1'),'',null,null,null))}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HR
+// ════════════════════════════════════════════════════════════════════════════
+function rHR(m, per, mode, mLabel, pLabel){
+  const tm=mode==='targets';
+  if(tm) return rHR_targets(m, per, mLabel);
+
+  const cpT  = nv(getTarget(m,'hr','comp_pct'))||DEF.hr.comp_pct;
+  const rdT  = nv(getTarget(m,'hr','recruit_days'))||DEF.hr.recruit_days;
+  const ttT  = nv(getTarget(m,'hr','training_min'))||DEF.hr.training_min;
+  const krT  = nv(getTarget(m,'hr','kpi_reviews'))||DEF.hr.kpi_reviews;
+
+  const hc   = nv(gd(m,per,'actuals','hr','headcount'));
+  const ck   = nv(gd(m,per,'actuals','hr','comp_checked'));
+  const co   = nv(gd(m,per,'actuals','hr','comp_compliant'));
+  const vl   = nv(gd(m,per,'actuals','hr','violations'));
+  const cpA  = hc>0?Math.round(co/hc*100):null;
+
+  const rfA  = nv(gd(m,per,'actuals','hr','roles_filled'));
+  const adA  = parseFloat(gd(m,per,'actuals','hr','avg_days'));
+  const i21A = nv(gd(m,per,'actuals','hr','filled_21'));
+  const oarA = parseFloat(gd(m,per,'actuals','hr','offer_acc'));
+  const adScore = !isNaN(adA)&&adA>0?(adA<=rdT?100:Math.max(0,100-(adA-rdT)*5)):null;
+  const i21P = rfA>0?Math.round(i21A/rfA*100):null;
+
+  const spA  = nv(gd(m,per,'actuals','hr','train_planned'));
+  const scA  = nv(gd(m,per,'actuals','hr','train_conducted'));
+  const taA  = nv(gd(m,per,'actuals','hr','train_attend'));
+  const arA  = parseFloat(gd(m,per,'actuals','hr','train_assess'));
+  const attR = hc>0&&scA>0?Math.round(taA/(scA*hc)*100):null;
+  const scP  = spA>0?pct(scA,spA):pct(scA,ttT);
+
+  const dsA  = nv(gd(m,per,'actuals','hr','kpi_sched'));
+  const drA  = nv(gd(m,per,'actuals','hr','kpi_done'));
+  const dotA = nv(gd(m,per,'actuals','hr','kpi_ontime'));
+  const airA = nv(gd(m,per,'actuals','hr','action_raised'));
+  const aicA = nv(gd(m,per,'actuals','hr','action_closed'));
+  const drP  = dsA>0?pct(drA,dsA):pct(drA,krT);
+
+  const vdA  = nv(gd(m,per,'actuals','hr','vendor_due'));
+  const voA  = nv(gd(m,per,'actuals','hr','vendor_ontime'));
+  const obgA = parseFloat(gd(m,per,'actuals','hr','office_budget'));
+  const oaA  = parseFloat(gd(m,per,'actuals','hr','office_actual'));
+  const uvA  = nv(gd(m,per,'actuals','hr','vendor_unresolved'));
+  const tt2A = nv(gd(m,per,'actuals','hr','tasks_total'));
+  const totA = nv(gd(m,per,'actuals','hr','tasks_ontime'));
+  const vopP = vdA>0?pct(voA,vdA):null;
+  const ocp  = !isNaN(obgA)&&!isNaN(oaA)&&obgA>0?Math.round(Math.max(0,100-Math.abs(oaA-obgA)/obgA*200)):null;
+  const atpP = tt2A>0?pct(totA,tt2A):null;
+
+  return `<div>
+    ${dh('HR & Administrative Lead', pLabel, pLabel+' · '+mLabel, null)}
+
+    ${kc('Employee Policy Compliance', 25, cpA!==null?cpA:null, 'green', `
+      ${mr('Total headcount', inp(m,per,'actuals','hr','headcount','0'), 'employees', null, null, null)}
+      ${mr('Employees checked this period', inp(m,per,'actuals','hr','comp_checked','0'), '', hc?pct(ck,hc):null, 'Target: 100% of employees', cpT+'% compliance target')}
+      ${mr('Employees found compliant', inp(m,per,'actuals','hr','comp_compliant','0'), '', cpA, cpA!==null?cpA+'% compliance rate':'Enter headcount + compliant count', null)}
+      ${mr('Policy violations logged', inp(m,per,'actuals','hr','violations','0'), 'count', vl===0?100:Math.max(0,100-vl*20), 'Target: 0', '0 violations')}
+      ${mr('Violation types', txt_inp(m,per,'actuals','hr','violation_types','e.g. attendance, conduct, process…'), '', null, null, null)}
+      ${mr('Compliance check completed on time?', sel_inp(m,per,'actuals','hr','comp_ontime',['','Yes','No']), '', null, null, null)}
+    `)}
+
+    ${kc('Recruitment Speed & Talent Quality', 25, adScore!==null?adScore:null, 'green', `
+      ${mr('Open roles at start of period', inp(m,per,'actuals','hr','roles_open','0'), 'roles', null, null, null)}
+      ${mr('Roles filled this period', inp(m,per,'actuals','hr','roles_filled','0'), 'roles', null, null, null)}
+      ${mr('Average days to fill', inp(m,per,'actuals','hr','avg_days','0'), 'days', adScore, 'Target: ≤'+rdT+' days', '≤'+rdT+' days')}
+      ${mr('Roles filled within 21 days', inp(m,per,'actuals','hr','filled_21','0'), '', i21P, i21P!==null?i21P+'% within target':'', null)}
+      ${mr('Offer acceptance rate (%)', inp(m,per,'actuals','hr','offer_acc','0'), '%', !isNaN(oarA)?oarA:null, 'Talent quality indicator', null)}
+      ${mr('Onboarding completions this period', inp(m,per,'actuals','hr','onboarding','0'), 'people', null, 'Employees who completed full onboarding', null)}
+    `)}
+
+    ${kc('Staff Training & Development', 20, scP!==null?scP:null, 'green', `
+      ${mr('Training sessions planned this period', inp(m,per,'actuals','hr','train_planned','0'), '', null, null, null)}
+      ${mr('Training sessions conducted', inp(m,per,'actuals','hr','train_conducted','0'), '', scP, 'Target: ≥'+ttT+' per month', '≥'+ttT+' per month')}
+      ${mr('Total staff attendance across all sessions', inp(m,per,'actuals','hr','train_attend','0'), 'people', null, null, null)}
+      ${mr('Attendance rate', `<input type="number" value="${attR||''}" disabled placeholder="Auto-calculated" style="background:var(--black4);font-size:13px;width:100%;opacity:.6">`, '%', attR, 'Calculated: attendance ÷ (sessions × headcount)', null)}
+      ${mr('Post-training assessment avg (1–10)', inp(m,per,'actuals','hr','train_assess','0'), '/ 10', !isNaN(arA)?pct(arA,10):null, 'Average across all assessments this period', null)}
+    `)}
+
+    ${kc('KPI Monitoring & Performance Management', 20, drP!==null?drP:null, 'green', `
+      ${mr('Departments scheduled for KPI review', inp(m,per,'actuals','hr','kpi_sched','0'), '', null, null, krT+' per month')}
+      ${mr('KPI reviews completed', inp(m,per,'actuals','hr','kpi_done','0'), '', drP, 'Target: '+krT+' per month', krT+' per month')}
+      ${mr('Reviews completed on time', inp(m,per,'actuals','hr','kpi_ontime','0'), '', drA>0?pct(dotA,drA):null, 'On time = before month end', null)}
+      ${mr('Departments actively on KPI system', inp(m,per,'actuals','hr','depts_on_kpi','0'), '', null, 'Count of depts submitting KPI reports', null)}
+      ${mr('Action items raised from reviews', inp(m,per,'actuals','hr','action_raised','0'), 'items', null, null, null)}
+      ${mr('Prior month action items closed', inp(m,per,'actuals','hr','action_closed','0'), 'items', airA>0||aicA>0?pct(aicA,Math.max(airA,1)):null, 'Tracks follow-through on prior commitments', null)}
+    `)}
+
+    ${kc('Administrative Operations', 10, atpP!==null?atpP:null, 'green', `
+      ${nbox('Maintain efficient office operations · Vendor coordination · Cost control')}
+      ${mr('Vendor contracts due for renewal', inp(m,per,'actuals','hr','vendor_due','0'), '', null, null, null)}
+      ${mr('Vendor contracts renewed on time', inp(m,per,'actuals','hr','vendor_ontime','0'), '', vopP, vopP!==null?vopP+'% on-time renewal':'', null)}
+      ${mr('Unresolved vendor issues', inp(m,per,'actuals','hr','vendor_unresolved','0'), '(target: 0)', uvA===0?100:Math.max(0,100-uvA*25), null, '0')}
+      ${mr('Office cost budget (₦)', inp(m,per,'actuals','hr','office_budget','0','text'), '', null, null, null)}
+      ${mr('Office cost actual (₦)', inp(m,per,'actuals','hr','office_actual','0','text'), '', ocp, ocp!==null?'Variance score: '+ocp+'% (100=on budget)':'', null)}
+      ${mr('Admin tasks total', inp(m,per,'actuals','hr','tasks_total','0'), '', null, null, null)}
+      ${mr('Admin tasks completed on time', inp(m,per,'actuals','hr','tasks_ontime','0'), '', atpP, atpP!==null?atpP+'% on-time completion':'', null)}
+    `)}
+  </div>`;
+}
+function rHR_targets(m, per, mLabel){
+  return `<div>
+    ${dh('HR & Administrative Lead — Set Targets', 'Monthly', 'Monthly targets for '+mLabel, null)}
+    ${kc('Policy Compliance',25,null,'green', mr('Compliance rate target (%)',inp(m,'month','targets','hr','comp_pct','95'),'%',null,null,null))}
+    ${kc('Recruitment Speed',25,null,'green', mr('Average days to fill target',inp(m,'month','targets','hr','recruit_days','21'),'days',null,null,null))}
+    ${kc('Staff Training',20,null,'green', mr('Minimum training sessions per month',inp(m,'month','targets','hr','training_min','1'),'sessions',null,null,null))}
+    ${kc('KPI Monitoring',20,null,'green', mr('Departments to review per month',inp(m,'month','targets','hr','kpi_reviews','5'),'departments',null,null,null))}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUBMIT PANEL — shown to leads below their dept content
+// ════════════════════════════════════════════════════════════════════════════
+function rSubmitPanel(role, m, per, mLabel, pLabel){
+  const sub = getSubmission(role, m, per);
+  const subTime = sub ? new Date(sub.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+  const ackBadge = sub?.acknowledgedAt
+    ? `<div style="margin-top:6px;font-size:11px;color:#3b82f6;font-weight:600">✓ Acknowledged by CEO on ${new Date(sub.acknowledgedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>`
+    : '';
+  return `<div style="margin-top:24px;border-top:2px solid var(--border);padding-top:20px" class="no-print">
+    ${sub ? `
+    <div style="background:#E8F5E9;border:1px solid var(--green);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:700;color:var(--green3);font-size:13px">✓ Report submitted — ${pLabel} · ${mLabel}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Submitted ${subTime} · visible to CEO</div>
+        ${ackBadge}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${getApiUrl()?`<button onclick="openPdf('${role}','${m}','${per}')" style="font-size:12px;padding:6px 12px;background:#E8F0FE;color:#3b82f6;border-color:#93C5FD;">📄 Download PDF</button>`:''}
+        <button onclick="doSubmit('${role}','${m}','${per}')" class="btn-outline" style="font-size:12px;padding:6px 14px;flex-shrink:0">↻ Re-submit</button>
+      </div>
+    </div>` : `
+    <div style="background:var(--amber-bg);border:1px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:600;color:var(--amber);font-size:13px">⚠ Not yet submitted — ${pLabel} · ${mLabel}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">Your data is saved as a draft. Submit to make it visible to the CEO.</div>
+    </div>`}
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button onclick="doSubmit('${role}','${m}','${per}')" class="btn-green" style="padding:10px 24px;font-size:14px;letter-spacing:.01em">
+        ${sub ? '↻ Re-submit / update' : '✓ Submit report to CEO'}
+      </button>
+      <span style="font-size:11px;color:var(--muted2)">All KPI data, custom KPIs and notes for ${pLabel} · ${mLabel} will be locked in and sent to the CEO view.</span>
+    </div>
+  </div>`;
+}
+
+function doSubmit(role, m, per){
+  if(!confirm('Submit this report to the CEO? Your current draft data will be locked in as the submitted version.')) return;
+  const draft = load(m, per);
+  const customKpis = loadCustomKpis(role);
+  const snapshot = {
+    actuals: (draft.actuals||{})[role] || {},
+    customKpis,
+    submittedAt: new Date().toISOString(),
+    month: m, period: per, role
+  };
+  // Save locally first (immediate, no network dependency)
+  saveSubmission(role, m, per, snapshot);
+  // Sync to Apps Script backend
+  apiPost('submit', {role, month:m, period:per,
+    actuals: snapshot.actuals, customKpis: snapshot.customKpis,
+    submittedAt: snapshot.submittedAt});
+  render();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HISTORY PANEL — leads can browse their previous submissions
+// ════════════════════════════════════════════════════════════════════════════
+function rHistoryPanel(role){
+  const all = loadAllSubmissions()[role] || {};
+  const entries = [];
+  Object.entries(all).forEach(([m, periods])=>{
+    Object.entries(periods).forEach(([per, snap])=>{
+      const mo = months().find(o=>o.v===m);
+      const pe = PERIODS.find(p=>p.v===per);
+      const dt = new Date(snap.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      entries.push({ m, per, mLabel:mo?.l||m, pLabel:pe?.l||per, dt, snap });
+    });
+  });
+  entries.sort((a,b)=>b.snap.submittedAt.localeCompare(a.snap.submittedAt));
+
+  if(!entries.length){
+    return `<div style="margin-top:16px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;color:var(--muted);font-size:13px">No submissions on record yet.</div>`;
+  }
+
+  const rows = entries.map(e=>{
+    const ckRows = (e.snap.customKpis||[]).map(ck=>{
+      const val = (e.snap.actuals||{})[ck.id]||'—';
+      return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--border);font-size:12px"><span style="color:var(--muted)">${ck.label}</span><span style="font-family:'JetBrains Mono',monospace;color:var(--ink)">${val} ${ck.unit}</span></div>`;
+    }).join('');
+    const pid = 'hp_'+e.m+'_'+e.per;
+    const stdEntries = Object.entries(e.snap.actuals||{}).filter(([k])=>!k.startsWith('ck_')).slice(0,14);
+    return `
+    <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--white2);cursor:pointer" onclick="toggleHist('${pid}')">
+        <div>
+          <span style="font-weight:600;font-size:13px;color:var(--ink)">${e.pLabel} · ${e.mLabel}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">Submitted ${e.dt}</span>
+        </div>
+        <span style="font-size:11px;color:var(--green);font-weight:700">▾ View</span>
+      </div>
+      <div id="${pid}" style="display:none;padding:14px;background:var(--white)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Standard KPI data</div>
+        ${stdEntries.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--border);font-size:12px"><span style="color:var(--muted)">${k.replace(/_/g,' ')}</span><span style="font-family:'JetBrains Mono',monospace;color:var(--ink)">${v||'—'}</span></div>`).join('')}
+        ${ckRows?`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px">Custom KPIs</div>${ckRows}`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:8px">
+    <div style="font-weight:700;font-size:14px;color:var(--ink);margin-bottom:12px">📋 My submission history (${entries.length} report${entries.length>1?'s':''})</div>
+    ${rows}
+  </div>`;
+}
+
+function toggleHist(id){
+  const el=document.getElementById(id);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CUSTOM KPIs — per-department user-defined KPIs
+// ════════════════════════════════════════════════════════════════════════════
+function renderCustomKpis(dept, m, per, isCEO){
+  let ckpis, actuals;
+  if(isCEO){
+    const sub = getSubmission(dept, m, per);
+    if(!sub) return '';
+    ckpis   = sub.customKpis || [];
+    actuals = sub.actuals    || {};
+  } else {
+    ckpis   = loadCustomKpis(dept);
+    actuals = (load(m,per).actuals||{})[dept] || {};
+  }
+  if(!ckpis.length) return !isCEO ? renderCustomKpisEmpty(dept) : '';
+
+  const rows = ckpis.map(ck=>{
+    const val = actuals[ck.id]!==undefined ? actuals[ck.id] : '';
+    const tgt = parseFloat(ck.target);
+    const act = parseFloat(val);
+    const bp  = !isNaN(tgt)&&tgt>0&&!isNaN(act) ? pct(act,tgt) : null;
+    const r   = bp!==null ? rag(bp) : 'n';
+    return `<div class="metric-row">
+      <div class="metric-label">
+        <span>${ck.label}</span>
+        <div style="display:flex;gap:5px;align-items:center">
+          ${ck.target?`<span class="pill pill-n" style="font-size:10px">Target: ${ck.target}${ck.unit?' '+ck.unit:''}</span>`:''}
+          ${bp!==null?`<span class="pill pill-${r}" style="font-size:10px">${bp}%</span>`:''}
+          ${!isCEO?`<button onclick="removeCustomKpi('${dept}','${ck.id}')" title="Remove" style="font-size:10px;padding:2px 7px;color:var(--red);border-color:#FCA5A5;background:var(--red-bg)">✕</button>`:''}
+        </div>
+      </div>
+      <div class="metric-input-wrap">
+        ${isCEO
+          ? `<input type="text" value="${val||'—'}" disabled style="background:var(--black4)">`
+          : `<input type="number" value="${val}" placeholder="0" onchange="sdCk('${m}','${per}','${dept}','${ck.id}',this.value)">`}
+        ${ck.unit?`<span class="metric-hint">${ck.unit}</span>`:''}
+      </div>
+      ${bp!==null?`<div class="bar-track"><div class="bar-fill bar-${r}" style="width:${Math.max(0,Math.min(100,bp))}%"></div></div>`:''}
+    </div>`;
+  }).join('');
+
+  return `<div class="card" style="border-top:2px solid #a855f7">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-weight:600;font-size:14px;color:var(--ink)">Custom KPIs</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="pill pill-b" style="font-size:10px">${ckpis.length} KPI${ckpis.length>1?'s':''}</span>
+        ${!isCEO?`<button onclick="addCustomKpi('${dept}')" class="btn-outline" style="font-size:11px;padding:4px 10px">+ Add KPI</button>`:''}
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderCustomKpisEmpty(dept){
+  return `<div class="card" style="border-top:2px solid #a855f7;border-style:dashed">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-weight:600;font-size:14px;color:var(--ink)">Custom KPIs</div>
+      <button onclick="addCustomKpi('${dept}')" class="btn-outline" style="font-size:11px;padding:4px 10px">+ Add KPI</button>
+    </div>
+    <div style="text-align:center;padding:14px;color:var(--muted2);font-size:13px">No custom KPIs yet. Add KPIs not in the standard list — they will appear on the CEO's dashboard when you submit.</div>
+  </div>`;
+}
+
+function sdCk(m, per, dept, kpiId, val){
+  sd(m, per, 'actuals', dept, kpiId, val);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CEO ACTIONS — acknowledge + PDF (shown only to CEO below dept content)
+// ════════════════════════════════════════════════════════════════════════════
+function rCeoActions(dept, m, per){
+  const sub = getSubmission(dept, m, per);
+  if(!sub) return `<div style="margin-top:16px;padding:12px 16px;background:var(--amber-bg);border:1px solid #FCD34D;border-radius:8px;font-size:13px;color:var(--amber);font-weight:500" class="no-print">⚠ ${DNAMES[dept]} has not yet submitted a report for this period.</div>`;
+  const subTime = new Date(sub.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const ackBadge = sub.acknowledgedAt ? `<span style="background:#E8F0FE;color:#3b82f6;border:1px solid #93C5FD;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700">✓ Reviewed ${new Date(sub.acknowledgedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>` : '';
+  return `<div style="margin-top:16px;padding:14px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap" class="no-print">
+    <div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Submission received ${subTime}</div>
+      ${ackBadge}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${getApiUrl()?`<button onclick="openPdf('${dept}','${m}','${per}')" style="font-size:12px;padding:7px 14px;background:#E8F0FE;color:#3b82f6;border-color:#93C5FD">📄 Download PDF</button>`:''}
+      ${!sub.acknowledgedAt?`<button onclick="doAcknowledge('${dept}','${m}','${per}')" class="btn-green" style="font-size:12px;padding:7px 14px">✓ Mark as reviewed</button>`:''}
+    </div>
+  </div>`;
+}
+
+function doAcknowledge(dept, m, per){
+  if(!confirm('Mark this submission as reviewed? The team member will be notified.')) return;
+  const ts = new Date().toISOString();
+  // Update local snapshot
+  const all = loadAllSubmissions();
+  if(((all[dept]||{})[m]||{})[per]){
+    all[dept][m][per].acknowledgedAt = ts;
+    all[dept][m][per].acknowledgedBy = 'ceo';
+    saveAllSubmissions(all);
+  }
+  // Update remote cache so UI reflects immediately without a full refresh
+  if(((S.remote[dept]||{})[m]||{})[per]){
+    S.remote[dept][m][per].acknowledgedAt = ts;
+    S.remote[dept][m][per].acknowledgedBy = 'ceo';
+  }
+  apiPost('acknowledge', {role:dept, month:m, period:per});
+  render();
+}
+
+function openPdf(role, m, per){
+  const url = getApiUrl();
+  if(!url){ alert('API not connected. Click ⚙ API in the topbar to set up.'); return; }
+  const btn = event.target; btn.textContent='⏳ Generating…'; btn.disabled=true;
+  apiGet('pdf', {role, month:m, period:per}, function(data){
+    btn.textContent='📄 Download PDF'; btn.disabled=false;
+    if(data.ok && data.pdfUrl) window.open(data.pdfUrl,'_blank');
+    else alert('PDF failed: '+(data.error||'Unknown error'));
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMMENTS PANEL
+// ════════════════════════════════════════════════════════════════════════════
+function rCommentsPanel(dept, m, per, isCEO){
+  const panelId = 'cmt_panel_'+dept+'_'+m.replace('-','')+'_'+per;
+  setTimeout(()=>loadComments(dept, m, per), 60);
+  return `<div id="${panelId}"><div style="color:var(--muted2);font-size:12px;padding:10px 0">Loading discussion…</div></div>`;
+}
+
+function loadComments(dept, m, per){
+  const panelId = 'cmt_panel_'+dept+'_'+m.replace('-','')+'_'+per;
+  const el = document.getElementById(panelId);
+  if(!el) return;
+  const cacheKey = dept+'_'+m+'_'+per;
+  const cached = S.comments[cacheKey] || [];
+  el.innerHTML = buildCommentsPanelHtml(dept, m, per, cached);
+  if(!getApiUrl()) return;
+  apiGet('get_comments', {dept, month:m, period:per}, function(data){
+    if(data.ok && data.comments){
+      S.comments[cacheKey] = data.comments;
+      const el2 = document.getElementById(panelId);
+      if(el2) el2.innerHTML = buildCommentsPanelHtml(dept, m, per, data.comments);
+    }
+  });
+}
+
+function buildCommentsPanelHtml(dept, m, per, comments){
+  const role = S.role; const isCEO = role==='ceo';
+  const mLabel = months().find(o=>o.v===m)?.l||m;
+  const pLabel = PERIODS.find(p=>p.v===per)?.l||per;
+  const topLevel = comments.filter(c=>!c.parentId);
+  const replies   = comments.filter(c=> c.parentId);
+
+  function commentHtml(c, isReply){
+    const fromCEO = c.fromRole==='ceo';
+    const dt = new Date(c.createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const avatarBg = fromCEO ? '#1B8A3C' : '#3b82f6';
+    const initials = fromCEO ? 'CEO' : c.fromRole.toUpperCase().slice(0,3);
+    const childReplies = replies.filter(r=>r.parentId===c.id);
+    return `<div class="comment-card ${fromCEO?'from-ceo':'from-lead'}${isReply?' reply':''}">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div class="comment-avatar" style="background:${avatarBg};color:#fff;min-width:28px">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-weight:700;font-size:12px;color:var(--ink)">${fromCEO?'Chief Executive Officer':(LABELS[c.fromRole]||c.fromRole)}</span>
+            <span style="font-size:10px;color:var(--muted2)">${dt}</span>
+          </div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap">${escHtml_(c.text)}</div>
+          ${!isReply?`<button onclick="toggleReplyBox('${c.id}')" style="font-size:11px;padding:2px 8px;margin-top:6px;color:var(--muted);border-color:var(--border)">↩ Reply</button>`:''}
+          <div id="rbox_${c.id}" style="display:none;margin-top:8px">
+            <textarea class="comment-input" id="rtxt_${c.id}" placeholder="Write a reply…" style="min-height:54px"></textarea>
+            <button onclick="postComment('${dept}','${m}','${per}','${c.id}')" class="btn-green" style="font-size:12px;padding:5px 14px;margin-top:6px">Post reply</button>
+          </div>
+        </div>
+      </div>
+    </div>${childReplies.map(r=>commentHtml(r,true)).join('')}`;
+  }
+
+  const canComment = isCEO || role===dept;
+  const newBox = canComment ? `
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Add a comment</div>
+      <textarea class="comment-input" id="ncmt_${dept}_${m}_${per}" placeholder="${isCEO?'Add a note or question for '+DNAMES[dept]+'…':'Respond to the CEO or add context to your submission…'}"></textarea>
+      <button onclick="postComment('${dept}','${m}','${per}',null)" class="btn-green" style="font-size:13px;padding:8px 20px;margin-top:8px">Post comment</button>
+    </div>` : '';
+
+  return `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-weight:700;font-size:14px;color:var(--ink)">💬 Discussion — ${pLabel} · ${mLabel}</div>
+      ${comments.length?`<span class="pill pill-n" style="font-size:10px">${comments.length} comment${comments.length!==1?'s':''}</span>`:''}
+    </div>
+    ${topLevel.length ? topLevel.map(c=>commentHtml(c,false)).join('') : `<div style="text-align:center;padding:16px;color:var(--muted2);font-size:13px">No comments yet.${canComment?' Add one below.':''}</div>`}
+    ${newBox}
+  </div>`;
+}
+
+function toggleReplyBox(id){ const b=document.getElementById('rbox_'+id); if(b) b.style.display=b.style.display==='none'?'block':'none'; }
+
+function postComment(dept, m, per, parentId){
+  const inputId = parentId ? 'rtxt_'+parentId : 'ncmt_'+dept+'_'+m+'_'+per;
+  const input   = document.getElementById(inputId);
+  if(!input||!input.value.trim()){ alert('Please write a comment first.'); return; }
+  const text = input.value.trim();
+  const cacheKey = dept+'_'+m+'_'+per;
+  if(!S.comments[cacheKey]) S.comments[cacheKey]=[];
+  S.comments[cacheKey].push({ id:'l_'+Date.now(), createdAt:new Date().toISOString(), fromRole:S.role, dept, month:m, period:per, parentId:parentId||null, text });
+  apiPost('comment', {fromRole:S.role, dept, month:m, period:per, text, parentId:parentId||null});
+  const panelId = 'cmt_panel_'+dept+'_'+m.replace('-','')+'_'+per;
+  const el = document.getElementById(panelId);
+  if(el) el.innerHTML = buildCommentsPanelHtml(dept, m, per, S.comments[cacheKey]);
+}
+
+function escHtml_(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+render();
+</script>
+</body>
+</html>
