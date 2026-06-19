@@ -246,10 +246,10 @@ button.btn-warn {
 // ── AUTH & CONFIG ─────────────────────────────────────────────────────────────
 // Credentials stored by username — login screen shows NO role list, preventing
 // process owners from seeing other users' names or roles.
-const CREDS  = {ceo:'APG@Ceo#25', sdl:'APG@Sdl#25', ops:'APG@Ops#25', mkt:'APG@Mkt#25', fin:'APG@Fin#25', hr:'APG@Hr#25'};
-const LABELS = {ceo:'Chief Executive Officer', sdl:'Sales & Distribution Lead', ops:'Operations Manager', mkt:'Marketing & Communications Lead', fin:'Head of Finance', hr:'HR & Administrative Lead'};
-const ACCESS = {ceo:['sdl','ops','mkt','fin','hr'], sdl:['sdl'], ops:['ops'], mkt:['mkt'], fin:['fin'], hr:['hr']};
-const DNAMES = {sdl:'Sales & Distribution', ops:'Operations', mkt:'Marketing & Comms', fin:'Finance', hr:'HR & Admin'};
+const CREDS  = {ceo:'APG@Ceo#25', cgl:'APG@Cgl#25', ops:'APG@Ops#25', mkt:'APG@Mkt#25', fin:'APG@Fin#25', hr:'APG@Hr#25'};
+const LABELS = {ceo:'Chief Executive Officer', cgl:'Commercial Growth Lead', ops:'Operations Manager', mkt:'Marketing & Communications Lead', fin:'Head of Finance', hr:'HR & Administrative Lead'};
+const ACCESS = {ceo:['cgl','ops','mkt','fin','hr'], cgl:['cgl'], ops:['ops'], mkt:['mkt'], fin:['fin'], hr:['hr']};
+const DNAMES = {cgl:'Commercial Growth', ops:'Operations', mkt:'Marketing & Comms', fin:'Finance', hr:'HR & Admin'};
 
 // ── SUBMISSION STORE ──────────────────────────────────────────────────────────
 // Submitted reports live separately from draft data.
@@ -346,24 +346,37 @@ function apiGet(action, params, cb){
 }
 
 // WRITE via JSONP GET — same mechanism as reads, guaranteed to reach Apps Script.
-// no-cors POST was silently blocked by browsers before it left the device.
-// We encode the payload as a URL parameter and route through doGet on the server.
-function apiPost(action, data){
+// onDone(result) is called with the API response when available.
+function apiPost(action, data, onDone){
   const url = getApiUrl();
-  if(!url) return;
+  if(!url){
+    onDone && onDone({ok:false, error:'No API URL configured'});
+    return;
+  }
   const payload = encodeURIComponent(JSON.stringify({action, ...data}));
   const cbName  = 'apg_w_' + Math.random().toString(36).slice(2,9);
   window[cbName] = function(res){
     delete window[cbName];
     document.getElementById(cbName+'_s')?.remove();
-    if(res && !res.ok) console.warn('APG write error:', res.error);
+    onDone && onDone(res);
   };
   const s = document.createElement('script');
   s.id  = cbName + '_s';
   s.src = url + '?action=write&payload=' + payload + '&callback=' + cbName;
-  s.onerror = ()=>{ delete window[cbName]; document.getElementById(cbName+'_s')?.remove(); };
+  s.onerror = ()=>{
+    delete window[cbName];
+    document.getElementById(cbName+'_s')?.remove();
+    onDone && onDone({ok:false, error:'Network error — check internet connection'});
+  };
   document.head.appendChild(s);
-  setTimeout(()=>{ delete window[cbName]; document.getElementById(cbName+'_s')?.remove(); }, 15000);
+  // 15 second timeout
+  setTimeout(()=>{
+    if(window[cbName]){
+      delete window[cbName];
+      document.getElementById(cbName+'_s')?.remove();
+      onDone && onDone({ok:false, error:'Request timed out'});
+    }
+  }, 15000);
 }
 
 // Fetch all submissions from API after login.
@@ -454,14 +467,14 @@ const PERIODS = [
 
 // Default targets from KPI documents
 const DEF = {
-  sdl:{ rev_target:50000000, cust_retail_t:10, cust_wholesale_t:5, team_pct_t:80, rtm_pct_t:80, rtm_purchase_pct_t:60, rtm_engage_pct_t:80, rep_pct_t:100 },
+  cgl:{ rev_target:50000000, cust_retail_t:10, cust_wholesale_t:5, team_pct_t:80, rtm_pct_t:80, rtm_purchase_pct_t:60, rtm_engage_pct_t:80, rep_pct_t:100 },
   ops:{ rev_target:1219680000, wrev_target:843853500, prod_target:60984000, new_retail_t:10, new_wholesale_t:5 },
   mkt:{ leads_min:100, leads_max:150, lift_pct:25, ush_rev:2000000, jumia_rev:150000, konga_rev:150000, greenroom_rev:150000, activations:30, activations_attend:10, awareness_camps:3, wholesale_acts:3, follow_pct:5, follow_pct_max:10, engage_pct:6, influencers:2, reach:500000, roas_social:4, roas_trad:4 },
   fin:{ report_day:5, recs_min:3, recv_max_pct:10, fund_opps:1 },
   hr:{ comp_pct:95, recruit_days:21, training_min:1, kpi_reviews:5 }
 };
 
-let S = { li:false, role:null, month:cm(), period:'month', dv:'sdl', tm:false, showHistory:false,
+let S = { li:false, role:null, month:cm(), period:'month', dv:'cgl', tm:false, showHistory:false,
           remote:{}, comments:{}, apiStatus:'none' };
 
 function cm(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
@@ -591,7 +604,7 @@ function doLogin(){
   // Load remote data after login
   setTimeout(initFromApi, 100);
 }
-function doLogout(){ S={li:false,role:null,month:cm(),period:'month',dv:'sdl',tm:false}; render(); }
+function doLogout(){ S={li:false,role:null,month:cm(),period:'month',dv:'cgl',tm:false}; render(); }
 function switchDept(d){ S.dv=d; render(); loadComments(d, S.month, S.period); }
 function switchMonth(v){ S.month=v; render(); }
 
@@ -641,7 +654,7 @@ function rDash(){
 
   const mode = S.tm&&isCEO ? 'targets' : 'actuals';
 
-  const fns = {sdl:rSDL, ops:rOps, mkt:rMkt, fin:rFin, hr:rHR};
+  const fns = {cgl:rCGL, ops:rOps, mkt:rMkt, fin:rFin, hr:rHR};
 
   const targetBanner = S.tm && isCEO ? `
     <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
@@ -736,7 +749,7 @@ function rPulse(){
       <div style="font-size:11px;color:var(--muted)">${sb}</div>
     </div>`;
   }
-  const srevA=nv(gd(m,per,'actuals','sdl','rev_actual')); const srevT=nv(getTarget(m,'sdl','rev_target'))||DEF.sdl.rev_target;
+  const srevA=nv(gd(m,per,'actuals','cgl','rev_actual')); const srevT=nv(getTarget(m,'cgl','rev_target'))||DEF.cgl.rev_target;
   const orevA=nv(gd(m,per,'actuals','ops','rev_actual')); const orevT=nv(getTarget(m,'ops','rev_target'))||DEF.ops.rev_target;
   const leads=nv(gd(m,per,'actuals','mkt','leads'));       const leadsT=nv(getTarget(m,'mkt','leads_min'))||DEF.mkt.leads_min;
   const recv=parseFloat(gd(m,per,'actuals','fin','recv_pct')); const recvMax=nv(getTarget(m,'fin','recv_max_pct'))||DEF.fin.recv_max_pct;
@@ -744,7 +757,7 @@ function rPulse(){
   return `<div style="margin-bottom:20px">
     <div style="margin-bottom:10px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--green3)">CEO Pulse · ${months().find(o=>o.v===m)?.l||m.replace('-',' ')}</div>
     <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">
-      ${pc('SDL revenue',srevA?fNGN(srevA):'No data','vs '+fNGN(srevT),pct(srevA,srevT)!==null?rag(pct(srevA,srevT)):'n')}
+      ${pc('CGL revenue',srevA?fNGN(srevA):'No data','vs '+fNGN(srevT),pct(srevA,srevT)!==null?rag(pct(srevA,srevT)):'n')}
       ${pc('Ops revenue',orevA?fNGN(orevA):'No data','vs '+fNGN(orevT),pct(orevA,orevT)!==null?rag(pct(orevA,orevT)):'n')}
       ${pc('Mkt leads',leads||'No data','target '+leadsT+'–'+(leadsT*1.5|0),pct(leads,leadsT)!==null?rag(pct(leads,leadsT)):'n')}
       ${pc('Overdue recv.',!isNaN(recv)&&recv!==''?recv+'%':'No data','max '+recvMax+'%',!isNaN(recv)?recv<=recvMax?'g':'r':'n')}
@@ -752,7 +765,7 @@ function rPulse(){
     </div>
     <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-right:4px">Submission status · ${PERIODS.find(p=>p.v===S.period)?.l||S.period}:</span>
-      ${['sdl','ops','mkt','fin','hr'].map(d=>{
+      ${['cgl','ops','mkt','fin','hr'].map(d=>{
         const sub = getSubmission(d, m, S.period);
         const t = sub ? new Date(sub.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
         return `<span title="${t?'Submitted '+t:'Not yet submitted'}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${sub?'#E8F5E9':'var(--amber-bg)'};color:${sub?'var(--green3)':'var(--amber)'};border:1px solid ${sub?'#A5D6A5':'#FCD34D'}">${sub?'✓':'⚠'} ${DNAMES[d]}</span>`;
@@ -860,24 +873,24 @@ function nbox(t,g){ return `<div class="note-box${g?' green':''}">${t}</div>`; }
 // ════════════════════════════════════════════════════════════════════════════
 // SDL — Sales & Distribution Lead
 // ════════════════════════════════════════════════════════════════════════════
-function rSDL(m, per, mode, mLabel, pLabel){
+function rCGL(m, per, mode, mLabel, pLabel){
   const isCEO=S.role==='ceo'; const tm=mode==='targets';
 
   // Targets (always read from monthly)
-  const revT    = nv(getTarget(m,'sdl','rev_target'))||DEF.sdl.rev_target;
-  const crT     = nv(getTarget(m,'sdl','cust_retail_t'))||DEF.sdl.cust_retail_t;
-  const cwT     = nv(getTarget(m,'sdl','cust_wholesale_t'))||DEF.sdl.cust_wholesale_t;
-  const teamT   = nv(getTarget(m,'sdl','team_pct_t'))||DEF.sdl.team_pct_t;
-  const rtmT    = nv(getTarget(m,'sdl','rtm_pct_t'))||DEF.sdl.rtm_pct_t; // kept for score compat
-  const repT    = nv(getTarget(m,'sdl','rep_pct_t'))||DEF.sdl.rep_pct_t;
+  const revT    = nv(getTarget(m,'cgl','rev_target'))||DEF.cgl.rev_target;
+  const crT     = nv(getTarget(m,'cgl','cust_retail_t'))||DEF.cgl.cust_retail_t;
+  const cwT     = nv(getTarget(m,'cgl','cust_wholesale_t'))||DEF.cgl.cust_wholesale_t;
+  const teamT   = nv(getTarget(m,'cgl','team_pct_t'))||DEF.cgl.team_pct_t;
+  const rtmT    = nv(getTarget(m,'cgl','rtm_pct_t'))||DEF.cgl.rtm_pct_t; // kept for score compat
+  const repT    = nv(getTarget(m,'cgl','rep_pct_t'))||DEF.cgl.rep_pct_t;
 
   // Actuals
-  const revA  = nv(gd(m,per,'actuals','sdl','rev_actual'));
-  const crA   = nv(gd(m,per,'actuals','sdl','cust_retail'));
-  const cwA   = nv(gd(m,per,'actuals','sdl','cust_wholesale'));
-  const teamA = nv(gd(m,per,'actuals','sdl','team_pct'));
+  const revA  = nv(gd(m,per,'actuals','cgl','rev_actual'));
+  const crA   = nv(gd(m,per,'actuals','cgl','cust_retail'));
+  const cwA   = nv(gd(m,per,'actuals','cgl','cust_wholesale'));
+  const teamA = nv(gd(m,per,'actuals','cgl','team_pct'));
   const rtmA  = 0; // replaced by purchase/engage split
-  const repA  = nv(gd(m,per,'actuals','sdl','rep_pct'));
+  const repA  = nv(gd(m,per,'actuals','cgl','rep_pct'));
 
   const revP  = pct(revA,revT);
   const custP = pct(crA+cwA, crT+cwT);
@@ -889,35 +902,35 @@ function rSDL(m, per, mode, mLabel, pLabel){
     ${dh('Sales & Distribution Lead', pLabel, pLabel+' · '+mLabel, score)}
 
     ${kc('Revenue Performance', 30, revP!==null?revP:null, 'green', `
-      ${mr('Revenue achieved (₦)', inp(m,per,'actuals','sdl','rev_actual','0','text'), '', revP, 'Target: '+fNGN(revT), fNGN(revT))}
-      ${mr('Retail revenue (₦)', inp(m,per,'actuals','sdl','rev_retail','0','text'), '', null, null, null)}
-      ${mr('Wholesale revenue (₦)', inp(m,per,'actuals','sdl','rev_wholesale','0','text'), '', null, null, null)}
+      ${mr('Revenue achieved (₦)', inp(m,per,'actuals','cgl','rev_actual','0','text'), '', revP, 'Target: '+fNGN(revT), fNGN(revT))}
+      ${mr('Retail revenue (₦)', inp(m,per,'actuals','cgl','rev_retail','0','text'), '', null, null, null)}
+      ${mr('Wholesale revenue (₦)', inp(m,per,'actuals','cgl','rev_wholesale','0','text'), '', null, null, null)}
     `)}
 
     ${kc('New Customer Acquisition', 25, custP!==null?custP:null, 'teal', `
-      ${mr('New retail outlets onboarded', inp(m,per,'actuals','sdl','cust_retail','0'), '', pct(crA,crT), 'Target: '+crT, crT+' outlets')}
-      ${mr('New wholesale distributors onboarded', inp(m,per,'actuals','sdl','cust_wholesale','0'), '', pct(cwA,cwT), 'Target: '+cwT, cwT+' distributors')}
-      ${mr('Lounges signed this period', inp(m,per,'actuals','sdl','lounges','0'), '', null, null, null)}
-      ${mr('Total active retail outlets (cumulative)', inp(m,per,'actuals','sdl','total_retail','0'), '', null, null, null)}
-      ${mr('Total active wholesale distributors (cumulative)', inp(m,per,'actuals','sdl','total_wholesale','0'), '', null, null, null)}
+      ${mr('New retail outlets onboarded', inp(m,per,'actuals','cgl','cust_retail','0'), '', pct(crA,crT), 'Target: '+crT, crT+' outlets')}
+      ${mr('New wholesale distributors onboarded', inp(m,per,'actuals','cgl','cust_wholesale','0'), '', pct(cwA,cwT), 'Target: '+cwT, cwT+' distributors')}
+      ${mr('Lounges signed this period', inp(m,per,'actuals','cgl','lounges','0'), '', null, null, null)}
+      ${mr('Total active retail outlets (cumulative)', inp(m,per,'actuals','cgl','total_retail','0'), '', null, null, null)}
+      ${mr('Total active wholesale distributors (cumulative)', inp(m,per,'actuals','cgl','total_wholesale','0'), '', null, null, null)}
     `)}
 
     ${kc('Sales Team Leadership', 20, teamA?teamA:null, 'teal', `
-      ${mr('% of reps hitting individual target', inp(m,per,'actuals','sdl','team_pct','0'), '%', teamA, 'Aggregate across all reps', teamT+'%')}
-      ${mr('Sales reps active (headcount)', inp(m,per,'actuals','sdl','rep_count','0'), '', null, null, null)}
-      ${mr('Reps recruited this period', inp(m,per,'actuals','sdl','reps_recruited','0'), '', null, null, null)}
-      ${mr('Team training sessions conducted', inp(m,per,'actuals','sdl','team_training','0'), 'sessions', null, null, null)}
-      ${mr('Team performance actions taken', txt_inp(m,per,'actuals','sdl','team_actions','Describe actions…'), '', null, null, null)}
+      ${mr('% of reps hitting individual target', inp(m,per,'actuals','cgl','team_pct','0'), '%', teamA, 'Aggregate across all reps', teamT+'%')}
+      ${mr('Sales reps active (headcount)', inp(m,per,'actuals','cgl','rep_count','0'), '', null, null, null)}
+      ${mr('Reps recruited this period', inp(m,per,'actuals','cgl','reps_recruited','0'), '', null, null, null)}
+      ${mr('Team training sessions conducted', inp(m,per,'actuals','cgl','team_training','0'), 'sessions', null, null, null)}
+      ${mr('Team performance actions taken', txt_inp(m,per,'actuals','cgl','team_actions','Describe actions…'), '', null, null, null)}
     `)}
 
     ${(()=>{
-      const totalOutlets  = nv(gd(m,per,'actuals','sdl','rtm_total'));
-      const purchasedCnt  = nv(gd(m,per,'actuals','sdl','rtm_purchased'));
-      const engagedCnt    = nv(gd(m,per,'actuals','sdl','rtm_engaged'));
+      const totalOutlets  = nv(gd(m,per,'actuals','cgl','rtm_total'));
+      const purchasedCnt  = nv(gd(m,per,'actuals','cgl','rtm_purchased'));
+      const engagedCnt    = nv(gd(m,per,'actuals','cgl','rtm_engaged'));
       const purchasedPct  = totalOutlets>0 ? Math.round(purchasedCnt/totalOutlets*100) : null;
       const engagedPct    = totalOutlets>0 ? Math.round(engagedCnt/totalOutlets*100)   : null;
-      const purchasedT    = nv(getTarget(m,'sdl','rtm_purchase_pct_t'))||60;
-      const engagedT      = nv(getTarget(m,'sdl','rtm_engage_pct_t'))||80;
+      const purchasedT    = nv(getTarget(m,'cgl','rtm_purchase_pct_t'))||60;
+      const engagedT      = nv(getTarget(m,'cgl','rtm_engage_pct_t'))||80;
       const rtmScore      = (purchasedPct!==null||engagedPct!==null)
         ? Math.round(((purchasedPct!==null?pct(purchasedPct,purchasedT):0)|0)*0.5 + ((engagedPct!==null?pct(engagedPct,engagedT):0)|0)*0.5)
         : null;
@@ -930,47 +943,47 @@ function rSDL(m, per, mode, mLabel, pLabel){
           '</div>':'';
       };
       return kc('Route-to-Market & Territory Coverage', 15, rtmScore, 'teal',
-        mr('Total outlets / customers in your territory', inp(m,per,'actuals','sdl','rtm_total','0'), 'assigned total', null, 'Enter your full territory size — all % rates calculate from this number', null) +
+        mr('Total outlets / customers in your territory', inp(m,per,'actuals','cgl','rtm_total','0'), 'assigned total', null, 'Enter your full territory size — all % rates calculate from this number', null) +
         '<div class="sep"></div>' +
         '<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px">Purchase rate — % of territory that bought</div>' +
-        mr('Outlets / customers that made a purchase this period', inp(m,per,'actuals','sdl','rtm_purchased','0'), 'count', purchasedPct!==null?pct(purchasedPct,purchasedT):null, totalOutlets>0?purchasedPct+'% of territory purchased':'Enter territory size above first', purchasedT+'% target') +
+        mr('Outlets / customers that made a purchase this period', inp(m,per,'actuals','cgl','rtm_purchased','0'), 'count', purchasedPct!==null?pct(purchasedPct,purchasedT):null, totalOutlets>0?purchasedPct+'% of territory purchased':'Enter territory size above first', purchasedT+'% target') +
         pBar(purchasedPct, purchasedT, 'Purchase rate this period') +
         '<div class="sep"></div>' +
         '<div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px">Engagement rate — % of territory contacted or active</div>' +
-        mr('Outlets / customers engaged this period (call, visit or order placed)', inp(m,per,'actuals','sdl','rtm_engaged','0'), 'count', engagedPct!==null?pct(engagedPct,engagedT):null, totalOutlets>0?engagedPct+'% of territory engaged':'Enter territory size above first', engagedT+'% target') +
+        mr('Outlets / customers engaged this period (call, visit or order placed)', inp(m,per,'actuals','cgl','rtm_engaged','0'), 'count', engagedPct!==null?pct(engagedPct,engagedT):null, totalOutlets>0?engagedPct+'% of territory engaged':'Enter territory size above first', engagedT+'% target') +
         '<div style="background:var(--green-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--muted);margin-bottom:8px">Counts as engaged: any outlet reached by phone call, physical visit, or who placed an order</div>' +
         pBar(engagedPct, engagedT, 'Engagement rate this period') +
-        mr('RTM strategy notes', txt_inp(m,per,'actuals','sdl','rtm_updates','Route changes, new areas, obstacles this period…'), '', null, null, null)
+        mr('RTM strategy notes', txt_inp(m,per,'actuals','cgl','rtm_updates','Route changes, new areas, obstacles this period…'), '', null, null, null)
       );
     })()}
 
     ${kc('Reporting & Operational Discipline', 10, repA?repA:null, 'teal', `
-      ${mr('Weekly reports submitted on time (%)', inp(m,per,'actuals','sdl','rep_pct','0'), '%', repA, repT+'% target · 4 reports per month expected', repT+'%')}
-      ${mr('Dashboards submitted on time (%)', inp(m,per,'actuals','sdl','dash_pct','0'), '%', null, null, null)}
-      ${mr('Performance insights provided to management', sel_inp(m,per,'actuals','sdl','insights',['','Yes','No']), '', null, null, null)}
+      ${mr('Weekly reports submitted on time (%)', inp(m,per,'actuals','cgl','rep_pct','0'), '%', repA, repT+'% target · 4 reports per month expected', repT+'%')}
+      ${mr('Dashboards submitted on time (%)', inp(m,per,'actuals','cgl','dash_pct','0'), '%', null, null, null)}
+      ${mr('Performance insights provided to management', sel_inp(m,per,'actuals','cgl','insights',['','Yes','No']), '', null, null, null)}
     `)}
   </div>`;
 }
 
-function rSDL_targets(m, per, mLabel){
+function rCGL_targets(m, per, mLabel){
   return `<div>
     ${dh('Sales & Distribution Lead — Set Targets', 'Monthly', 'Monthly targets for '+mLabel, null)}
     ${kc('Revenue Performance', 30, null, 'green', `
-      ${mr('Monthly revenue target (₦)', inp(m,'month','targets','sdl','rev_target','50000000','text'), '', null, null, null)}
+      ${mr('Monthly revenue target (₦)', inp(m,'month','targets','cgl','rev_target','50000000','text'), '', null, null, null)}
     `)}
     ${kc('New Customer Acquisition', 25, null, 'teal', `
-      ${mr('New retail outlets target', inp(m,'month','targets','sdl','cust_retail_t','10'), 'per month', null, null, null)}
-      ${mr('New wholesale/distributors target', inp(m,'month','targets','sdl','cust_wholesale_t','5'), 'per month', null, null, null)}
+      ${mr('New retail outlets target', inp(m,'month','targets','cgl','cust_retail_t','10'), 'per month', null, null, null)}
+      ${mr('New wholesale/distributors target', inp(m,'month','targets','cgl','cust_wholesale_t','5'), 'per month', null, null, null)}
     `)}
     ${kc('Sales Team Leadership', 20, null, 'teal', `
-      ${mr('Team KPI achievement rate target (%)', inp(m,'month','targets','sdl','team_pct_t','80'), '%', null, null, null)}
+      ${mr('Team KPI achievement rate target (%)', inp(m,'month','targets','cgl','team_pct_t','80'), '%', null, null, null)}
     `)}
     ${kc('Route-to-Market Coverage', 15, null, 'teal', `
-      ${mr('Purchase rate target — % of territory that must buy (%)', inp(m,'month','targets','sdl','rtm_purchase_pct_t','60'), '%', null, '% of total outlets / customers expected to make a purchase', null)}
-      ${mr('Engagement rate target — % of territory that must be contacted (%)', inp(m,'month','targets','sdl','rtm_engage_pct_t','80'), '%', null, 'Call + visit + order — combined engagement target', null)}
+      ${mr('Purchase rate target — % of territory that must buy (%)', inp(m,'month','targets','cgl','rtm_purchase_pct_t','60'), '%', null, '% of total outlets / customers expected to make a purchase', null)}
+      ${mr('Engagement rate target — % of territory that must be contacted (%)', inp(m,'month','targets','cgl','rtm_engage_pct_t','80'), '%', null, 'Call + visit + order — combined engagement target', null)}
     `)}
     ${kc('Reporting & Discipline', 10, null, 'teal', `
-      ${mr('Weekly reports on time target (%)', inp(m,'month','targets','sdl','rep_pct_t','100'), '%', null, null, null)}
+      ${mr('Weekly reports on time target (%)', inp(m,'month','targets','cgl','rep_pct_t','100'), '%', null, null, null)}
     `)}
   </div>`;
 }
@@ -1370,54 +1383,113 @@ function rHR_targets(m, per, mLabel){
 // SUBMIT PANEL — shown to leads below their dept content
 // ════════════════════════════════════════════════════════════════════════════
 function rSubmitPanel(role, m, per, mLabel, pLabel){
-  const sub = getSubmission(role, m, per);
-  const subTime = sub ? new Date(sub.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+  const sub     = getSubmission(role, m, per);
+  const status  = sub?.status || 'none';
+  const subTime = sub?.submittedAt
+    ? new Date(sub.submittedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : null;
   const ackBadge = sub?.acknowledgedAt
     ? `<div style="margin-top:6px;font-size:11px;color:#3b82f6;font-weight:600">✓ Acknowledged by CEO on ${new Date(sub.acknowledgedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>`
     : '';
-  return `<div style="margin-top:24px;border-top:2px solid var(--border);padding-top:20px" class="no-print">
-    ${sub ? `
-    <div style="background:#E8F5E9;border:1px solid var(--green);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  const noApi = !getApiUrl();
+
+  let statusBanner = '';
+  if(noApi){
+    statusBanner = `<div style="background:#FEF9EC;border:2px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--amber);font-size:13px">⚠ API not connected</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">You must connect the API before submitting. Click <b>⚙ API</b> in the topbar and paste your Apps Script URL. Without this, your report will not reach the CEO.</div>
+    </div>`;
+  } else if(status === 'submitted'){
+    statusBanner = `<div style="background:#E8F5E9;border:1px solid var(--green);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
-        <div style="font-weight:700;color:var(--green3);font-size:13px">✓ Report submitted — ${pLabel} · ${mLabel}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">Submitted ${subTime} · visible to CEO</div>
+        <div style="font-weight:700;color:var(--green3);font-size:13px">✓ Report confirmed — ${pLabel} · ${mLabel}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Confirmed received by server ${subTime} · Visible to CEO</div>
         ${ackBadge}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${getApiUrl()?`<button onclick="openPdf('${role}','${m}','${per}')" style="font-size:12px;padding:6px 12px;background:#E8F0FE;color:#3b82f6;border-color:#93C5FD;">📄 Download PDF</button>`:''}
-        <button onclick="doSubmit('${role}','${m}','${per}')" class="btn-outline" style="font-size:12px;padding:6px 14px;flex-shrink:0">↻ Re-submit</button>
+        ${getApiUrl()?`<button onclick="openPdf('${role}','${m}','${per}')" style="font-size:12px;padding:6px 12px;background:#E8F0FE;color:#3b82f6;border-color:#93C5FD">📄 Download PDF</button>`:''}
+        <button onclick="doSubmit('${role}','${m}','${per}')" class="btn-outline" style="font-size:12px;padding:6px 14px">↻ Re-submit</button>
       </div>
-    </div>` : `
-    <div style="background:var(--amber-bg);border:1px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+    </div>`;
+  } else if(status === 'pending'){
+    statusBanner = `<div style="background:#FEF9EC;border:1px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:600;color:var(--amber);font-size:13px">⏳ Sending to server…</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">Your report is being transmitted. Do not close this page. If this persists, try re-submitting.</div>
+    </div>`;
+  } else if(status === 'failed'){
+    statusBanner = `<div style="background:var(--red-bg);border:1px solid #FCA5A5;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--red);font-size:13px">✕ Submission failed — ${pLabel} · ${mLabel}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${sub?.error||'Could not reach server'} · Check your API connection and try again.</div>
+    </div>`;
+  } else {
+    statusBanner = `<div style="background:var(--amber-bg);border:1px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-bottom:14px">
       <div style="font-weight:600;color:var(--amber);font-size:13px">⚠ Not yet submitted — ${pLabel} · ${mLabel}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px">Your data is saved as a draft. Submit to make it visible to the CEO.</div>
-    </div>`}
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">Your data is saved as a draft. Submit to send it to the CEO.</div>
+    </div>`;
+  }
+
+  const btnLabel = status==='submitted' ? '↻ Re-submit / update'
+                 : status==='failed'    ? '↻ Retry submission'
+                 : status==='pending'   ? '⏳ Sending…'
+                 : '✓ Submit report to CEO';
+  const btnDisabled = status==='pending' || noApi ? 'disabled style="opacity:.5;cursor:not-allowed"' : '';
+
+  return `<div style="margin-top:24px;border-top:2px solid var(--border);padding-top:20px" class="no-print">
+    ${statusBanner}
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button onclick="doSubmit('${role}','${m}','${per}')" class="btn-green" style="padding:10px 24px;font-size:14px;letter-spacing:.01em">
-        ${sub ? '↻ Re-submit / update' : '✓ Submit report to CEO'}
+      <button onclick="${status!=='pending'&&!noApi?`doSubmit('${role}','${m}','${per}')`:''}" class="btn-green" style="padding:10px 24px;font-size:14px" ${btnDisabled}>
+        ${btnLabel}
       </button>
-      <span style="font-size:11px;color:var(--muted2)">All KPI data, custom KPIs and notes for ${pLabel} · ${mLabel} will be locked in and sent to the CEO view.</span>
+      <span style="font-size:11px;color:var(--muted2)">All KPI data, notes and custom KPIs for ${pLabel} · ${mLabel}.</span>
     </div>
   </div>`;
 }
 
 function doSubmit(role, m, per){
-  if(!confirm('Submit this report to the CEO? Your current draft data will be locked in as the submitted version.')) return;
-  const draft = load(m, per);
+  if(!confirm('Submit this report to the CEO?')) return;
+
+  // Block submission if API not connected — submission would never reach CEO
+  const url = getApiUrl();
+  if(!url){
+    showToast_('⚠ API not connected — click ⚙ API in the topbar and paste your Apps Script URL first', 'amber');
+    return;
+  }
+
+  const draft      = load(m, per);
   const customKpis = loadCustomKpis(role);
-  const snapshot = {
+  const submittedAt = new Date().toISOString();
+  const snapshot   = {
     actuals: (draft.actuals||{})[role] || {},
-    customKpis,
-    submittedAt: new Date().toISOString(),
-    month: m, period: per, role
+    customKpis, submittedAt, month:m, period:per, role,
+    status: 'pending'   // not confirmed until API responds
   };
-  // Save locally first (immediate, no network dependency)
+
+  // Save as pending — panel shows "Sending…" state
   saveSubmission(role, m, per, snapshot);
-  // Sync to Apps Script backend
-  apiPost('submit', {role, month:m, period:per,
-    actuals: snapshot.actuals, customKpis: snapshot.customKpis,
-    submittedAt: snapshot.submittedAt});
+  showToast_('⏳ Sending report to CEO…', 'amber');
   render();
+
+  // Send to API — only mark confirmed when response is ok:true
+  apiPost('submit', {
+    role, month:m, period:per,
+    actuals: snapshot.actuals,
+    customKpis: snapshot.customKpis,
+    submittedAt
+  }, function(res){
+    if(res && res.ok){
+      saveSubmission(role, m, per, {...snapshot, status:'submitted'});
+      showToast_('✓ Report confirmed — CEO has been notified', 'green');
+    } else {
+      // API failed — clear pending so user can retry
+      saveSubmission(role, m, per, {...snapshot, status:'failed',
+        error: res?.error||'Could not reach server'});
+      showToast_('✕ Submission failed: '+(res?.error||'Server unreachable — check API URL and try again'), 'red');
+    }
+    render();
+  });
+
+  // Also sync custom KPIs
+  apiPost('save_ckpis', {role, kpis: customKpis});
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1639,7 +1711,7 @@ function buildCommentsPanelHtml(dept, m, per, comments){
             <span style="font-weight:700;font-size:12px;color:var(--ink)">${fromCEO?'Chief Executive Officer':(LABELS[c.fromRole]||c.fromRole)}</span>
             <span style="font-size:10px;color:var(--muted2)">${dt}</span>
           </div>
-          <div style="font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap">${escHtml_(c.text)}</div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap">${escHtml_(c.text)}${c._pending?` <span style="font-size:10px;color:var(--muted2);font-style:italic">sending…</span>`:''}</div>
           ${!isReply?`<button onclick="toggleReplyBox('${c.id}')" style="font-size:11px;padding:2px 8px;margin-top:6px;color:var(--muted);border-color:var(--border)">↩ Reply</button>`:''}
           <div id="rbox_${c.id}" style="display:none;margin-top:8px">
             <textarea class="comment-input" id="rtxt_${c.id}" placeholder="Write a reply…" style="min-height:54px"></textarea>
@@ -1674,14 +1746,46 @@ function postComment(dept, m, per, parentId){
   const inputId = parentId ? 'rtxt_'+parentId : 'ncmt_'+dept+'_'+m+'_'+per;
   const input   = document.getElementById(inputId);
   if(!input||!input.value.trim()){ alert('Please write a comment first.'); return; }
-  const text = input.value.trim();
+
+  if(!getApiUrl()){
+    showToast_('⚠ API not connected — comments require the API to be configured', 'amber');
+    return;
+  }
+
+  const text     = input.value.trim();
   const cacheKey = dept+'_'+m+'_'+per;
+  const tempId   = 'local_'+Date.now();
+
+  // Optimistic: show immediately in UI
   if(!S.comments[cacheKey]) S.comments[cacheKey]=[];
-  S.comments[cacheKey].push({ id:'l_'+Date.now(), createdAt:new Date().toISOString(), fromRole:S.role, dept, month:m, period:per, parentId:parentId||null, text });
-  apiPost('comment', {fromRole:S.role, dept, month:m, period:per, text, parentId:parentId||null});
+  S.comments[cacheKey].push({
+    id:tempId, createdAt:new Date().toISOString(),
+    fromRole:S.role, dept, month:m, period:per,
+    parentId:parentId||null, text, _pending:true
+  });
+
   const panelId = 'cmt_panel_'+dept+'_'+m.replace('-','')+'_'+per;
   const el = document.getElementById(panelId);
   if(el) el.innerHTML = buildCommentsPanelHtml(dept, m, per, S.comments[cacheKey]);
+
+  // Send to API — confirm or remove on failure
+  apiPost('comment', {fromRole:S.role, dept, month:m, period:per, text, parentId:parentId||null},
+    function(res){
+      if(res && res.ok){
+        // Replace temp entry with confirmed (remove _pending flag)
+        S.comments[cacheKey] = S.comments[cacheKey].map(c=>
+          c.id===tempId ? {...c, id:res.id||tempId, _pending:false} : c
+        );
+        showToast_('✓ Comment sent', 'green');
+      } else {
+        // Remove the optimistic entry
+        S.comments[cacheKey] = S.comments[cacheKey].filter(c=>c.id!==tempId);
+        showToast_('✕ Comment failed: '+(res?.error||'Server error'), 'red');
+      }
+      const el2 = document.getElementById(panelId);
+      if(el2) el2.innerHTML = buildCommentsPanelHtml(dept, m, per, S.comments[cacheKey]);
+    }
+  );
 }
 
 function escHtml_(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
