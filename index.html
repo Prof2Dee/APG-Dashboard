@@ -1157,10 +1157,10 @@ function rDGL_weeklyBrand(m,per,brand,isCEO){
 function rDGL_weeklyTeam(m,per,isCEO){
   return `<div class="card" style="border-top:2px solid #3b82f6">
     <div style="font-weight:600;font-size:14px;color:var(--ink);margin-bottom:14px">Team & Ops — This Week</div>
-    ${mr('Team planning session held',sel_inp(m,per,'actuals','dgl','c_w_session',[''Yes','No']),'',null,null,'all brands covered')}
+    ${mr('Team planning session held',sel_inp(m,per,'actuals','dgl','c_w_session',['','Yes','No']),'',null,null,'all brands covered')}
     ${mr('On-time task delivery',inp(m,per,'actuals','dgl','c_w_tasks','0'),'%',null,95,'target ≥95%')}
     ${mr('Community response rate (all brands)',inp(m,per,'actuals','dgl','c_w_response','0'),'%',null,95,'95% within 24hrs')}
-    ${mr('CEO dashboard submitted on time',sel_inp(m,per,'actuals','dgl','c_w_dashboard',[''Yes','No']),'',null,null,'end of week')}
+    ${mr('CEO dashboard submitted on time',sel_inp(m,per,'actuals','dgl','c_w_dashboard',['','Yes','No']),'',null,null,'end of week')}
   </div>`;
 }
 
@@ -1179,9 +1179,9 @@ function rDGL_trackA(m,per,isCEO){
     ${mr('ROAS',inp(m,per,'actuals','dgl','zaza_roas','0'),'x',null,DEF.dgl.zaza_roas,'target ≥4x')}
     ${mr('Qualified leads generated',inp(m,per,'actuals','dgl','zaza_leads','0'),'leads',null,DEF.dgl.zaza_leads,'150/month')}
     ${mr('MROI',inp(m,per,'actuals','dgl','zaza_mroi','0'),'x',null,DEF.dgl.zaza_mroi,'≥3x by Month 6')}
-    ${mr('CAC improved vs last month',sel_inp(m,per,'actuals','dgl','zaza_cac_improved',[''Yes','No']),'',null,null,'or within ₦ benchmark set by OM')}
+    ${mr('CAC improved vs last month',sel_inp(m,per,'actuals','dgl','zaza_cac_improved',['','Yes','No']),'',null,null,'or within ₦ benchmark set by OM')}
     ${mr('Actual CAC this month (₦)',inp(m,per,'actuals','dgl','zaza_cac_actual','0'),'₦',null,null,'for records')}
-    ${mr('Campaign P&L note submitted',sel_inp(m,per,'actuals','dgl','zaza_campaign_pl',[''Yes','N/A — no campaign >₦200k this month']),'',null,null,'for campaigns >₦200k spend')}
+    ${mr('Campaign P&L note submitted',sel_inp(m,per,'actuals','dgl','zaza_campaign_pl',['','Yes','N/A — no campaign >₦200k this month']),'',null,null,'for campaigns >₦200k spend')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Retail & Content · 15pts</div>
     ${mr('Retail activations',inp(m,per,'actuals','dgl','zaza_activations','0'),'activations',null,DEF.dgl.zaza_activations,'4/month')}
@@ -1192,9 +1192,9 @@ function rDGL_trackA(m,per,isCEO){
     ${mr('UGC collaborations',inp(m,per,'actuals','dgl','zaza_ugc','0'),'collabs',null,DEF.dgl.zaza_ugc,'10/month')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Intelligence & Alignment · 14pts</div>
-    ${mr('Competitor intelligence report submitted',sel_inp(m,per,'actuals','dgl','zaza_competitor',[''Yes','No']),'',null,null,'monthly to OM')}
-    ${mr('Zaza campaigns co-briefed with CGL ≥7 days pre-launch',sel_inp(m,per,'actuals','dgl','zaza_cgl_align',['''Yes','No','N/A — no campaign this month']),'',null,null,'zero post-launch rework')}
-    ${mr('Inventory flagged to Ops ≥5 days before activation',sel_inp(m,per,'actuals','dgl','zaza_ops_coord',[''Yes','No','N/A']),'',null,null,'before stock-movement campaigns')}`;
+    ${mr('Competitor intelligence report submitted',sel_inp(m,per,'actuals','dgl','zaza_competitor',['','Yes','No']),'',null,null,'monthly to OM')}
+    ${mr('Zaza campaigns co-briefed with CGL ≥7 days pre-launch',sel_inp(m,per,'actuals','dgl','zaza_cgl_align',['','Yes','No','N/A — no campaign this month']),'',null,null,'zero post-launch rework')}
+    ${mr('Inventory flagged to Ops ≥5 days before activation',sel_inp(m,per,'actuals','dgl','zaza_ops_coord',['','Yes','No','N/A']),'',null,null,'before stock-movement campaigns')}`;
 }
 
 function rDGL_trackB_brand(m,per,brand,brandLabel,isCEO){
@@ -1214,27 +1214,27 @@ function rDGL_trackB_brand(m,per,brand,brandLabel,isCEO){
 
   const prelaunch=`
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 8px">Strategy & Readiness</div>
-    ${mr('GTM plan delivered',sel_inp(m,per,'actuals','dgl',bk+'gtm',[''Yes','No']),'',null,null,'within 30 days of brief')}
-    ${mr('Channel & budget plan signed off',sel_inp(m,per,'actuals','dgl',bk+'channel_plan',[''Yes','No']),'',null,null,'within 45 days of brief')}
-    ${mr('Pre-launch budget submitted for approval',sel_inp(m,per,'actuals','dgl',bk+'budget_submitted',[''Yes','No']),'',null,null,'before any spend committed')}
-    ${mr('Competitor landscape report submitted',sel_inp(m,per,'actuals','dgl',bk+'competitor',[''Yes','No']),'',null,null,'before campaign activation')}
+    ${mr('GTM plan delivered',sel_inp(m,per,'actuals','dgl',bk+'gtm',['','Yes','No']),'',null,null,'within 30 days of brief')}
+    ${mr('Channel & budget plan signed off',sel_inp(m,per,'actuals','dgl',bk+'channel_plan',['','Yes','No']),'',null,null,'within 45 days of brief')}
+    ${mr('Pre-launch budget submitted for approval',sel_inp(m,per,'actuals','dgl',bk+'budget_submitted',['','Yes','No']),'',null,null,'before any spend committed')}
+    ${mr('Competitor landscape report submitted',sel_inp(m,per,'actuals','dgl',bk+'competitor',['','Yes','No']),'',null,null,'before campaign activation')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Pre-Launch Buzz</div>
     ${mr('Teaser content calendar on schedule',inp(m,per,'actuals','dgl',bk+'teaser_pct','0'),'%',null,100,'100% on-schedule')}
     ${mr('Waitlist / early-interest signups',inp(m,per,'actuals','dgl',bk+'waitlist','0'),'signups',null,null,'target set at kickoff')}
-    ${mr('Social channels live (500+ followers)',sel_inp(m,per,'actuals','dgl',bk+'social_live',[''Yes','No']),'',null,null,'60 days pre-launch')}
+    ${mr('Social channels live (500+ followers)',sel_inp(m,per,'actuals','dgl',bk+'social_live',['','Yes','No']),'',null,null,'60 days pre-launch')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Trade Readiness & Alignment</div>
-    ${mr('Distributor & outlet onboarding plan',sel_inp(m,per,'actuals','dgl',bk+'distributor_plan',[''Yes','No']),'',null,null,'target outlet count confirmed')}
-    ${mr('Sales & Ops brief co-signed ≥14 days before launch',sel_inp(m,per,'actuals','dgl',bk+'ops_aligned',[''Yes','No','Not yet scheduled']),'',null,null,'by CGL and Ops Lead')}
-    ${mr('AI / workflow efficiency initiative',sel_inp(m,per,'actuals','dgl',bk+'ai_initiative',[''Yes — documented & presented','No','Not due this quarter']),'',null,null,'1 per quarter')}`;
+    ${mr('Distributor & outlet onboarding plan',sel_inp(m,per,'actuals','dgl',bk+'distributor_plan',['','Yes','No']),'',null,null,'target outlet count confirmed')}
+    ${mr('Sales & Ops brief co-signed ≥14 days before launch',sel_inp(m,per,'actuals','dgl',bk+'ops_aligned',['','Yes','No','Not yet scheduled']),'',null,null,'by CGL and Ops Lead')}
+    ${mr('AI / workflow efficiency initiative',sel_inp(m,per,'actuals','dgl',bk+'ai_initiative',['','Yes — documented & presented','No','Not due this quarter']),'',null,null,'1 per quarter')}`;
 
   const launchSection=launched?`
     <div style="margin-top:14px;padding:14px 16px;background:var(--green-bg);border:1.5px solid var(--green);border-radius:8px">
       <div style="font-size:11px;font-weight:700;color:var(--green3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">🚀 Launch Milestones — ${brandLabel}</div>
 
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Milestone 1 — Launch Week Reach (target ≥500,000 combined)</div>
-      ${mr('Launch campaign delivered on date',sel_inp(m,per,'actuals','dgl',bk+'launch_on_date',[''Yes','No — delayed']),'',null,null,'±5 days · pass/fail')}
+      ${mr('Launch campaign delivered on date',sel_inp(m,per,'actuals','dgl',bk+'launch_on_date',['','Yes','No — delayed']),'',null,null,'±5 days · pass/fail')}
       ${mr('Instagram (accounts reached)',inp(m,per,'actuals','dgl',bk+'ig_reach','0'),'accounts',null,150000,'min ≥150,000')}
       ${mr('TikTok (video views)',inp(m,per,'actuals','dgl',bk+'tt_views','0'),'views',null,150000,'min ≥150,000')}
       ${mr('Facebook (accounts reached)',inp(m,per,'actuals','dgl',bk+'fb_reach','0'),'accounts',null,80000,'min ≥80,000')}
@@ -1244,8 +1244,8 @@ function rDGL_trackB_brand(m,per,brand,brandLabel,isCEO){
 
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Milestone 2 — Launch Month</div>
       ${mr('Qualified leads / orders (launch month)',inp(m,per,'actuals','dgl',bk+'launch_leads','0'),'leads',null,null,'target set at kickoff')}
-      ${mr('30-day performance review delivered',sel_inp(m,per,'actuals','dgl',bk+'perf_review',['''Yes','No','Not yet due']),'',null,null,'with recalibrated KPIs')}
-      ${mr('CAC measurement baseline established',sel_inp(m,per,'actuals','dgl',bk+'cac_baseline',[''Yes','No']),'',null,null,'first CAC reported within 30 days of launch')}
+      ${mr('30-day performance review delivered',sel_inp(m,per,'actuals','dgl',bk+'perf_review',['','Yes','No','Not yet due']),'',null,null,'with recalibrated KPIs')}
+      ${mr('CAC measurement baseline established',sel_inp(m,per,'actuals','dgl',bk+'cac_baseline',['','Yes','No']),'',null,null,'first CAC reported within 30 days of launch')}
       ${rDGL_launchExcellence(m,per,brand,brandLabel)}
     </div>`:`
     <div style="background:var(--black4);border:1.5px dashed var(--border2);border-radius:8px;padding:16px;margin-top:14px;text-align:center">
@@ -1308,29 +1308,29 @@ function rDGL_trackC(m,per,isCEO){
   return `
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 8px">Team Management · 10pts</div>
     ${mr('Team planning sessions held this month',inp(m,per,'actuals','dgl','c_team_sessions','0'),'sessions',null,4,'4 weekly sessions · all brands')}
-    ${mr('Monthly 1:1s completed (all direct reports)',sel_inp(m,per,'actuals','dgl','c_oneonones',[''Yes — all completed','No — some missed']),'',null,null,'development notes on file')}
+    ${mr('Monthly 1:1s completed (all direct reports)',sel_inp(m,per,'actuals','dgl','c_oneonones',['','Yes — all completed','No — some missed']),'',null,null,'development notes on file')}
     ${mr('On-time task delivery (team-wide)',inp(m,per,'actuals','dgl','c_task_delivery','0'),'%',null,95,'target ≥95%')}
-    ${mr('Team scorecards reviewed',sel_inp(m,per,'actuals','dgl','c_scorecards',[''Yes — all members reviewed','No']),'',null,null,'monthly · no member left unreviewed')}
+    ${mr('Team scorecards reviewed',sel_inp(m,per,'actuals','dgl','c_scorecards',['','Yes — all members reviewed','No']),'',null,null,'monthly · no member left unreviewed')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Budget Management · 7pts</div>
     ${mr('Approved monthly budget (₦)',inp(m,per,'actuals','dgl','c_budget_approved','0'),'₦',null,null,'enter approved budget amount')}
     ${mr('Actual spend this month (₦)',inp(m,per,'actuals','dgl','c_budget_actual','0'),'₦',null,null,'across all brands')}
     ${budgetNote}
-    ${mr('Budget allocation documented before spend',sel_inp(m,per,'actuals','dgl','c_budget_documented',[''Yes','No']),'',null,null,'per brand, approved before commitment')}
-    ${mr('Cost efficiency improvement implemented',sel_inp(m,per,'actuals','dgl','c_cost_efficiency',[''Yes — documented','No','Not due this quarter']),'',null,null,'≥1 per quarter without sacrificing output')}
+    ${mr('Budget allocation documented before spend',sel_inp(m,per,'actuals','dgl','c_budget_documented',['','Yes','No']),'',null,null,'per brand, approved before commitment')}
+    ${mr('Cost efficiency improvement implemented',sel_inp(m,per,'actuals','dgl','c_cost_efficiency',['','Yes — documented','No','Not due this quarter']),'',null,null,'≥1 per quarter without sacrificing output')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Executive Reporting · 7pts</div>
-    ${mr('CEO performance dashboard submitted on time',sel_inp(m,per,'actuals','dgl','c_dashboard_submitted',[''Yes','No']),'',null,null,'weekly · covers reach, revenue, MROI, CAC, budget vs actuals')}
-    ${mr('Monthly report quality (self-rated)',sel_inp(m,per,'actuals','dgl','c_report_quality',[''1 — Data dump, no insight','2','3','4','5 — Insight-led with what worked, risks & next steps']),'',null,null,'target ≥4 · insight-led not data-dump')}
+    ${mr('CEO performance dashboard submitted on time',sel_inp(m,per,'actuals','dgl','c_dashboard_submitted',['','Yes','No']),'',null,null,'weekly · covers reach, revenue, MROI, CAC, budget vs actuals')}
+    ${mr('Monthly report quality (self-rated)',sel_inp(m,per,'actuals','dgl','c_report_quality',['','1 — Data dump, no insight','2','3','4','5 — Insight-led with what worked, risks & next steps']),'',null,null,'target ≥4 · insight-led not data-dump')}
     ${mr('Ad hoc requests completed within 24 hours',inp(m,per,'actuals','dgl','c_adhoc_pct','0'),'%',null,100,'CEO / OM requests')}
 
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">Intelligence & Alignment · 8pts</div>
-    ${mr('Market opportunity flag submitted to OM',sel_inp(m,per,'actuals','dgl','c_market_flag',[''Yes','No']),'',null,null,'≥1 documented opportunity with commercial implications')}
-    ${mr('Cross-brand competitive intelligence (quarterly)',sel_inp(m,per,'actuals','dgl','c_cross_intel',[''Yes — submitted','No','Not due this quarter']),'',null,null,'Zaza + Melo + PopMint categories')}
-    ${mr('Sales collaboration score (self-rated)',sel_inp(m,per,'actuals','dgl','c_sales_collab',[''1','2','3','4','5']),'',null,null,'target ≥4/5 · campaigns co-signed before activation')}
-    ${mr('Ops coordination — inventory flagged ≥5 days pre-activation',sel_inp(m,per,'actuals','dgl','c_ops_coord',[''Yes','No','N/A']),'',null,null,'all brands')}
+    ${mr('Market opportunity flag submitted to OM',sel_inp(m,per,'actuals','dgl','c_market_flag',['','Yes','No']),'',null,null,'≥1 documented opportunity with commercial implications')}
+    ${mr('Cross-brand competitive intelligence (quarterly)',sel_inp(m,per,'actuals','dgl','c_cross_intel',['','Yes — submitted','No','Not due this quarter']),'',null,null,'Zaza + Melo + PopMint categories')}
+    ${mr('Sales collaboration score (self-rated)',sel_inp(m,per,'actuals','dgl','c_sales_collab',['','1','2','3','4','5']),'',null,null,'target ≥4/5 · campaigns co-signed before activation')}
+    ${mr('Ops coordination — inventory flagged ≥5 days pre-activation',sel_inp(m,per,'actuals','dgl','c_ops_coord',['','Yes','No','N/A']),'',null,null,'all brands')}
     ${mr('Community response rate (all brands, all channels)',inp(m,per,'actuals','dgl','c_response_rate','0'),'%',null,95,'95% of queries within 24 hours')}
-    ${mr('Quarterly performance review delivered to leadership',sel_inp(m,per,'actuals','dgl','c_quarterly_review',[''Yes — delivered on time','No','Not due this quarter']),'',null,null,'all brands · includes next-quarter plan')}`;
+    ${mr('Quarterly performance review delivered to leadership',sel_inp(m,per,'actuals','dgl','c_quarterly_review',['','Yes — delivered on time','No','Not due this quarter']),'',null,null,'all brands · includes next-quarter plan')}`;
 }
 
 function calcDGLScore(m,per){
